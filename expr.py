@@ -10,6 +10,16 @@ class Expr:
         return self.span.content()
 
 @dchash
+class Id(Expr):
+    pass
+
+@dchash
+class Fn(Expr):
+    keys: tuple[Span]
+    kw_arrow: Span
+    body: Expr
+
+@dchash
 class Integer(Expr):
     pass
 

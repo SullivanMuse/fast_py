@@ -38,9 +38,9 @@ class Input:
 
 @dataclass
 class Span:
-    s: str
-    i: int
-    j: int
+    s: str = ''
+    i: int = 0
+    j: int = 0
 
     def content(self):
         return self.s[self.i : self.j]
