@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Any
+import operator as op
 
 @dataclass
 class Input:
@@ -407,6 +408,11 @@ class Parser:
             return (not self(s)) and (None, s)
         return parse
 
+def make_parser(f):
+    p = Parser()
+    p.f = f(p)
+    return p
+
 def parser(other):
     if isinstance(other, Parser):
         return other
@@ -459,7 +465,7 @@ def seqws(*ps):
     >>> p('x  y  z  ') 
     (('x', 'y', 'z'), Input(s='x  y  z  ', i=9))
     '''
-    return +seq(*(-parser(p) for p in ps))
+    return seq(*(-parser(p) for p in ps))
 
 def seqspanned(*ps):
     '''
@@ -469,6 +475,54 @@ def seqspanned(*ps):
     ((Span(s='xyz', i=0, j=3), 'x', 'y', 'z'), Input(s='xyz', i=3))
     '''
     return seqws(*ps).spanned().map(lambda x: (x[1], *x[0]))
+
+def opleft(rators, rand):
+    '''
+    rators: [(str, cls)]
+    '''
+    rators = [(kw(rator), cls) for rator, cls in rators]
+    rand <<= ws
+    @Parser
+    def parse(s):
+        if r := rand(s):
+            left, s1 = r
+            # While there are operators to consume
+            while True:
+                # For each candidate operator
+                for rator, cls in rators:
+                    # If there is an operator of this type
+                    if r := rator(s1):
+                        kw_op, s1 = r
+                        # If there is not an operand that is an error
+                        if r := rand(s1):
+                            right, s1 = r
+                        else:
+                            return
+                        span = s.span(s1)
+                        left = cls(span, left, kw_op, right)
+                        break
+                else:
+                    break
+            return left, s1
+    return parse
+
+def opright(rators, rand):
+    rators = [
+        (kw(rator), cls)
+        for rator, cls in rators
+    ]
+    rand <<= ws
+    if len(rators) == 0:
+        return rand
+    else:
+        p = Parser()
+        rator, cls = rators[0]
+        p.f = seqspanned(rand, rator, p).map_star(cls)
+
+        for rator, cls in rators[1 :]:
+            p.f += seqspanned(rand, rator, p).map_star(cls)
+        p.f += rand
+        return p
 
 @Parser
 def one(s):
@@ -498,4 +552,4 @@ space = pred(str.isspace)
 ws = space.many0()
 
 def kw(m):
-    return +-tag(m).span()
+    return -tag(m).span()

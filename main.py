@@ -1,76 +1,48 @@
 from comb import *
-import expr
-import value
 
-# Parse
-ex = Parser()
-key = (alpha * ('_' + alnum).many0()).span()
-id = key.map(expr.Id)
-integer = (digit.many1() * ('_' * digit.many1()).many0() * tag('_').negate()).span().map(expr.Integer)
-integer_type = kw('int').span().map(expr.IntegerType)
-type_type = kw('type').span().map(expr.TypeType)
-fn = (+seqspanned((-key).many1(), kw('->'), ex)).map_star(expr.Fn)
-ex_not_ann = integer + integer_type + type_type + fn + id
+dchash = dataclass(eq=True, frozen=True)
 
-ann = (+seqspanned(-ex_not_ann, kw(':'), +-ex)).map_star(expr.Ann)
-ex.f = ann + ex_not_ann
+@dchash
+class Expr:
+  span: Span
 
-def parse(s):
-    r, _ = ex(s)
-    return r
+@dchash
+class Int(Expr): pass
 
-@dataclass
-class Interp:
-    values: dict[str, value.Value] = field(default_factory=dict)
+@dchash
+class Id(Expr): pass
 
-    def eval(self, ex: expr.Expr) -> value.Value:
-        '''
-        >>> eval(parse('1234'))
-        Integer(value=1234)
-        >>> eval(parse('1234: 1234'))
-        Integer(value=1234)
-        >>> eval(parse('int'))
-        IntegerType()
-        >>> eval(parse('type'))
-        TypeType()
-        '''
-        if isinstance(ex, expr.Integer):
-            return value.Integer(int(ex.content()))
-        elif isinstance(ex, expr.Ann):
-            return eval(ex.left)
-        elif isinstance(ex, expr.IntegerType):
-            return value.IntegerType()
-        elif isinstance(ex, expr.TypeType):
-            return value.TypeType()
-        elif isinstance(ex, expr.Fn):
-            pass
+@dchash
+class Paren(Expr):
+  kw_lpar: Span
+  inner: Expr
+  kw_rpar: Span
 
-@dataclass
-class Environment:
-    types: dict[str, value.Value]
+@dchash
+class BinOp(Expr):
+  left: Expr
+  kw_op: Span
+  right: Expr
 
-    def __getitem__(self, key):
-        return self.types[key]
-    
-    def check1(self, ex: expr.Expr) -> bool:
-        pass
+@dchash
+class Pow(BinOp): pass
+@dchash
+class Mul(BinOp): pass
+@dchash
+class Div(BinOp): pass
+@dchash
+class Add(BinOp): pass
+@dchash
+class Sub(BinOp): pass
 
-def check(ex: expr.Expr) -> bool:
-    '''
-    >>> check(parse('1234: int'))
-    True
-    >>> check(parse('int: type'))
-    True
-    '''
-    if isinstance(ex, expr.Ann):
-        return infer(ex.left) == eval(ex.right)
-    else:
-        return True
+run = digit.many1()
+integer = (run * ('_' * run).many0()).span().map(Int)
+name = (alpha * alnum.many0().optional() * ('_' * alnum.many1()).many0()).span()
+ident = name.map(Id)
+atom = (ident + integer) << ws
 
-def infer(ex: expr.Expr) -> value.Value:
-    if isinstance(ex, expr.Integer):
-        return value.IntegerType()
-    elif isinstance(ex, (expr.IntegerType, expr.TypeType)):
-        return value.TypeType()
-    elif isinstance(ex, expr.Ann):
-        return infer(ex.left)
+pow = opright([('^', Pow)], atom)
+mul = opleft([('*', Mul), ('/', Div)], pow)
+add = opleft([('+', Add), ('-', Sub)], mul)
+
+paren = make_parser(lambda paren: seqspanned('(', paren, ')').map_star(Paren) + add)
