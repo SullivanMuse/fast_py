@@ -42,6 +42,10 @@ class Span:
     s: str = ''
     i: int = 0
     j: int = 0
+    
+    @classmethod
+    def all(cls, s):
+        return cls(s, 0, len(s))
 
     def content(self):
         return self.s[self.i : self.j]
