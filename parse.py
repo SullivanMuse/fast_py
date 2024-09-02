@@ -93,3 +93,23 @@ def test_ident():
 
     s = "1234asdf"
     assert ident(s) is None, "Unsuccessful parse"
+
+
+def test_pow():
+    s = "x ^ y"
+    assert pow(s) == (Pow(Span.all(s), Id(Span(s, 0, 1)), Span(s, 2, 3), Id(Span(s, 4, 5))), Input(s, len(s))), "Successful parse"
+
+
+def test_mul():
+    s = "x * y"
+    assert mul(s) == (Mul(Span.all(s), Id(Span(s, 0, 1)), Span(s, 2, 3), Id(Span(s, 4, 5))), Input(s, len(s))), "Successful parse"
+
+
+def test_add():
+    s = "x + y"
+    assert add(s) == (Add(Span.all(s), Id(Span(s, 0, 1)), Span(s, 2, 3), Id(Span(s, 4, 5))), Input(s, len(s))), "Successful parse"
+
+
+def test_paren():
+    s = "(x)"
+    assert paren(s) == (Paren(Span.all(s), "(", Id(Span(s, 1, 2)), ")"), Input(s, len(s))), "Successful parse"
