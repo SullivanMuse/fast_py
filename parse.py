@@ -48,7 +48,10 @@ fn = (
     .map(lambda x: Fn(x[1], x[0][0], x[0][1]))
 )
 
-atom.f = ident + string + integer + floating + array + fn
+paren = ("(" >> ws >> expr << ws << ")").spanned().map(lambda x: Paren(x[1], x[0]))
+
+atom.f = ident + string + integer + floating + array + fn + paren
+
 
 expr.f = atom
 
@@ -267,7 +270,7 @@ def test_fn():
         ),
         Input.end(s),
     ), "Successful parse"
-    
+
     s = "fn ( a , b , c , ) a"
     assert fn(s) == (
         Fn(
@@ -275,5 +278,25 @@ def test_fn():
             [Span(s, 5, 6), Span(s, 9, 10), Span(s, 13, 14)],
             Id(Span(s, len(s) - 1, len(s))),
         ),
+        Input.end(s),
+    ), "Successful parse"
+
+
+def test_paren():
+    s = "(x)"
+    assert paren(s) == (
+        Paren(Span.all(s), Id(Span(s, 1, 2))),
+        Input.end(s),
+    ), "Successful parse"
+
+    s = "( x )"
+    assert paren(s) == (
+        Paren(Span.all(s), Id(Span(s, 2, 3))),
+        Input.end(s),
+    ), "Successful parse"
+
+    s = "( (x) )"
+    assert paren(s) == (
+        Paren(Span.all(s), Paren(Span(s, 2, 5), Id(Span(s, 3, 4)))),
         Input.end(s),
     ), "Successful parse"
