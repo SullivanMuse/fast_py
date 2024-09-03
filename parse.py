@@ -30,7 +30,9 @@ string = (
     .map(lambda x: String(x[1], x[0][0], x[0][1]))
 )
 
-atom.f = ident + string + integer + floating
+array = ("[" >> expr.opt() << "]").spanned().map(lambda x: Array(x[1], x[0]))
+
+atom.f = ident + string + integer + floating + array
 
 expr.f = atom
 
@@ -148,3 +150,23 @@ def test_string():
         ),
         Input.end(s),
     ), "String with escape"
+
+def test_array():
+    s = "[]"
+    assert array(s) == (
+        Array(Span.all(s), None),
+        Input.end(s),
+    ), "Array with no elements"
+    
+    s = "[1]"
+    assert array(s) == (
+        Array(
+            Span.all(s),
+            Integer(Span(s, 1, 2)),
+        ),
+        Input.end(s),
+    ), "Array with single element"
+    
+    # TODO:
+    #   s = "[1, 2]"
+    #   s = "[1, 2,]"
