@@ -33,11 +33,11 @@ string = (
 array = ("[" >> expr.opt() << "]").spanned().map(lambda x: Array(x[1], x[0]))
 
 range_syntax = (
-    seq(atom.opt(), "..", tag("=").opt(), atom.opt())
+    seq((atom << ws).opt(), ".." >> tag("=").opt(), (ws >> atom).opt())
     .spanned()
     .map(
         lambda x: Range(
-            x[1], x[0][0], x[0][3], "clopen" if x[0][2] is None else "closed"
+            x[1], x[0][0], x[0][2], "clopen" if x[0][1] is None else "closed"
         )
     )
 )
@@ -184,7 +184,6 @@ def test_array():
 
 def test_range():
     s = ".."
-    
     assert range_syntax(s) == (
         Range(Span.all(s), None, None, "clopen"),
         Input.end(s),
@@ -219,3 +218,33 @@ def test_range():
         Range(Span.all(s), None, Id(Span(s, len(s)-1, len(s))), "clopen"),
         Input.end(s),
     ), "Range to clopen"
+
+    s = " .."    
+    assert range_syntax(s) is None, "Bad whitespace"
+    
+    s = " ..="
+    assert range_syntax(s) is None, "Bad whitespace"
+
+    s = "a ..="
+    assert range_syntax(s) == (
+        Range(Span.all(s), Id(Span(s, 0, 1)), None, "closed"),
+        Input.end(s),
+    ), "Range from closed with whitespace"
+
+    s = "a .."
+    assert range_syntax(s) == (
+        Range(Span.all(s), Id(Span(s, 0, 1)), None, "clopen"),
+        Input.end(s),
+    ), "Range from clopen with whitespace"
+    
+    s = "..= b"
+    assert range_syntax(s) == (
+        Range(Span.all(s), None, Id(Span(s, len(s)-1, len(s))), "closed"),
+        Input.end(s),
+    ), "Range to closed with whitespace"
+    
+    s = ".. b"
+    assert range_syntax(s) == (
+        Range(Span.all(s), None, Id(Span(s, len(s)-1, len(s))), "clopen"),
+        Input.end(s),
+    ), "Range to clopen with whitespace"
