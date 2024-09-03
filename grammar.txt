@@ -1,114 +1,55 @@
-# Literals
+# Grammar summary
 
-dec_run = [0-9]+ ("_" [0-9]+)*
+## Atoms
 
-// integer
-bin_integer = "0b" [01]+ ("_" [01]+)*
-dec_integer = dec_run
-hex_integer = "0x" [0-9a-f]+ ("_" [0-9a-f]+)*
-integer = bin_integer | dec_integer | hex_integer
+atom
+    id
+    1234
+    1.0e-5
+    d"Hello\\, {x}"
+    [x, y, z]
+    (x)
+    x -> e
 
-// float
-whole = dec_run
-fraction = "." dec_run
-exponent = "e" "-"? dec_run
-float
-    = whole fraction exponent // 1.0e5
-    | whole fraction          // 1.0
-    | whole exp               // 1e5
+# Operators
 
-// string
-character = [^\"{}]
-escape_sequence = "\\" | '\"' | "\{" | "\}"
-interpolant = "{" statements "}"
-string_item
-    = character
-    | escape_sequence
-    | interpolant
-string = id? '"' string_item* '"'
+postfix                 // postfix operators
+    x(y) x[y] x.y
+    x.await x.chain x?
+right **                // exponentiation
+prefix ! ~ - : ...      // negative
+left [a]..[=][b]        // range syntax
+left * @ / // /^ %      // multiplicative operators
+left + -                // additive operators
+left << >>              // shifts
+left &                  // bit and
+left ^                  // bit xor
+left |                  // bit or
+listfix                 // comparators
+    in notin
+    is isnot
+    < <= >= > == !=
+left and                // logical and
+left or                 // logical or
+listfix ,               // tuple
 
-// array
-array = "[" expr "]"
+# Compound Expressions
 
-// range
-range = atom? ".." "="? atom?
+block = '{' statement[;] '}'
+if = 'if' expr block ('else' 'if' block)* ('else' block)?
 
-# Atoms
+# Statements
 
-literal = integer | float | string
-name = [a-zA-Z] [_a-zA-Z0-9]*
-id = name
-paren = "(" expr ")"
-lambda = "fn" "(" id[,] ")" block
-atom = paren | id | literal | lambda
+fn = 'fn' name '(' id[,] ')' block
+return = 'return' expr?
+break = 'break'
+continue = 'continue'
+for = 'for' expr 'in' expr block
+while = 'while' expr block
+loop = 'loop' block
+use = 'use' path
+    path = (name '.')* id ('as' id)? | '(' path[,] ')'
+let = 'let' pattern '=' expr
+assign = view '=' expr
 
-# Postfix Operators
-
-## True postfix
-await = postfix "." "await"
-chain = postfix "." "chain"
-propogate = postfix "?"
-
-## Mixfix
-call = postfix "(" expr ")"
-index = postfix "[" expr "]"
-method_call = postfix "." name "(" expr ")"
-
-postfix = call | method_call | await | chain | propogate | atom
-
-# Prefix Operators
-
-prefix_op = "!" | "~" | "-" | ":" | "..."
-prefix = prefix_op prefix | postfix
-
-# Binary Operators
-
-right "**" // exponentiation
-left ("*" | "@" | "/" | "//" | "/^" | "%") // multiplicative operators
-left ("+" | "-") // additive operators
-left ("<<" | ">>") // shifts
-left "&" // bit and
-left "^" // bit xor
-left "|" // bit or
-listfix in notin is isnot < <= >= > == != // comparators
-left "and"
-left "or"
-listfix "," // tuple
-
-# Expressions
-
-else = "else" block
-elseif = "else" "if" expr block
-if = "if" expr block elseif* else?
-
-# Declarations
-function_decl = "fn" id "(" id[,] ")" block
-decl = function_decl
-
-return = "return" expr
-break = "break"
-continue = "continue"
-
-for = "for" expr "in" expr block
-while = "while" expr block
-loop = "loop" block
-
-path_list = path[,]
-terminal = id ("as" id)? | "(" path_list ")"
-path = (id ".")* terminal
-use = "use" path
-
-statement
-    = if
-    | block
-    | decl
-    | assignment
-    | mutation
-    | expression
-    | return
-    | break
-    | for
-    | while
-    | loop
-    | use
-block = "{" statement[;] "}"
+statement = fn | return | break | continue | for | while | loop | use | let | assign
