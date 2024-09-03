@@ -16,7 +16,7 @@ floating = (
     .map(Float)
 )
 
-name = (alpha * alnum.many0().opt() * ("_" * alnum.many1()).many0()).span()
+name = (alpha * ("_" + alnum).many0()).span()
 ident = name.map(Id)
 atom = ident + integer
 
