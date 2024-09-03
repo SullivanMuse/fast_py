@@ -76,6 +76,11 @@ class Index(Expr):
     index: Expr
 
 @dataclass
+class Prefix(Expr):
+    op: str
+    inner: Expr
+
+@dataclass
 class Comparison(Expr):
     # Invariant: len(inner) == len(comparators) + 1
     # Each comparator is one of

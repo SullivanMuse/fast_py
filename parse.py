@@ -54,11 +54,18 @@ atom.f = ident + string + integer + floating + array + fn + paren
 
 tail = ws >> (
     tag("?").map(lambda op: lambda x: Postfix(x[1], x[0], op))
-    + (tag(".") >> ws >> (tag("await") + "chain")).map(lambda op: lambda x: Postfix(x[1], x[0], op))
+    + (tag(".") >> ws >> (tag("await") + "chain")).map(
+        lambda op: lambda x: Postfix(x[1], x[0], op)
+    )
     + (tag(".") >> ws >> name).map(lambda field: lambda x: Field(x[1], x[0], field))
-    + (ws >> "(" >> ws >> expr << ws << ")").map(lambda args: lambda x: Call(x[1], x[0], args))
-    + (ws >> "[" >> ws >> expr << ws << "]").map(lambda args: lambda x: Index(x[1], x[0], args))
+    + (ws >> "(" >> ws >> expr << ws << ")").map(
+        lambda args: lambda x: Call(x[1], x[0], args)
+    )
+    + (ws >> "[" >> ws >> expr << ws << "]").map(
+        lambda args: lambda x: Index(x[1], x[0], args)
+    )
 )
+
 
 def fixpostfix(x):
     f, xs = x
@@ -67,9 +74,17 @@ def fixpostfix(x):
         f = x((f, span))
     return f
 
+
 postfix = (atom * tail.spanned().many0()).map(fixpostfix)
 
-expr.f = postfix
+prefix = recursive(
+    lambda prefix: (((tag("!") + "~" + "-" + ":" + "...") << ws) * prefix)
+    .spanned()
+    .map(lambda x: Prefix(x[1], x[0][0], x[0][1]))
+    + postfix
+)
+
+expr.f = prefix
 
 
 def test_integer():
@@ -317,16 +332,28 @@ def test_paren():
         Input.end(s),
     ), "Successful parse"
 
+
 def test_postfix():
     s = "x.y(a)[c].await.chain?"
-    id_x = Id(span=Span(s, i=0, j=1))
-    field_y = Field(span=Span(s, i=0, j=3), inner=id_x, field=Span(s, i=2, j=3))
-    call = Call(span=Span(s, i=0, j=6), f=field_y, args=Id(span=Span(s, i=4, j=5)))
-    index = Index(span=Span(s, i=0, j=9), container=call, index=Id(span=Span(s, i=7, j=8)))
-    await_ = Postfix(span=Span(s, i=0, j=15), inner=index, op='await')
-    chain = Postfix(span=Span(s, i=0, j=21), inner=await_, op='chain')
-    propogate = Postfix(span=Span(s, i=0, j=22), inner=chain, op='?')
+    id_x = Id(Span(s, i=0, j=1))
+    field_y = Field(Span(s, i=0, j=3), id_x, Span(s, i=2, j=3))
+    call = Call(Span(s, i=0, j=6), field_y, Id(Span(s, i=4, j=5)))
+    index = Index(Span(s, i=0, j=9), call, Id(Span(s, i=7, j=8)))
+    await_ = Postfix(Span(s, i=0, j=15), index, "await")
+    chain = Postfix(Span(s, i=0, j=21), await_, "chain")
+    propogate = Postfix(Span(s, i=0, j=22), chain, "?")
     assert postfix(s) == (
         propogate,
         Input.end(s),
     ), "Successful parse"
+
+
+def test_prefix():
+    s = "...!~-:x"
+    id_x = Id(Span(s, i=7, j=8))
+    quote = Prefix(Span(s, i=6, j=8), ":", id_x)
+    negative = Prefix(Span(s, i=5, j=8), "-", quote)
+    complement = Prefix(Span(s, i=4, j=8), "~", negative)
+    not_ = Prefix(Span(s, i=3, j=8), "!", complement)
+    spread = Prefix(Span.all(s), "...", not_)
+    assert prefix(s) == (spread, Input.end(s)), "Successful parse"
