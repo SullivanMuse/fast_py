@@ -52,8 +52,24 @@ paren = ("(" >> ws >> expr << ws << ")").spanned().map(lambda x: Paren(x[1], x[0
 
 atom.f = ident + string + integer + floating + array + fn + paren
 
+tail = ws >> (
+    tag("?").map(lambda op: lambda x: Postfix(x[1], x[0], op))
+    + (tag(".") >> ws >> (tag("await") + "chain")).map(lambda op: lambda x: Postfix(x[1], x[0], op))
+    + (tag(".") >> ws >> name).map(lambda field: lambda x: Field(x[1], x[0], field))
+    + (ws >> "(" >> ws >> expr << ws << ")").map(lambda args: lambda x: Call(x[1], x[0], args))
+    + (ws >> "[" >> ws >> expr << ws << "]").map(lambda args: lambda x: Index(x[1], x[0], args))
+)
 
-expr.f = atom
+def fixpostfix(x):
+    f, xs = x
+    for x, span in xs:
+        span = f.span.span(span)
+        f = x((f, span))
+    return f
+
+postfix = (atom * tail.spanned().many0()).map(fixpostfix)
+
+expr.f = postfix
 
 
 def test_integer():
@@ -298,5 +314,19 @@ def test_paren():
     s = "( (x) )"
     assert paren(s) == (
         Paren(Span.all(s), Paren(Span(s, 2, 5), Id(Span(s, 3, 4)))),
+        Input.end(s),
+    ), "Successful parse"
+
+def test_postfix():
+    s = "x.y(a)[c].await.chain?"
+    id_x = Id(span=Span(s, i=0, j=1))
+    field_y = Field(span=Span(s, i=0, j=3), inner=id_x, field=Span(s, i=2, j=3))
+    call = Call(span=Span(s, i=0, j=6), f=field_y, args=Id(span=Span(s, i=4, j=5)))
+    index = Index(span=Span(s, i=0, j=9), container=call, index=Id(span=Span(s, i=7, j=8)))
+    await_ = Postfix(span=Span(s, i=0, j=15), inner=index, op='await')
+    chain = Postfix(span=Span(s, i=0, j=21), inner=await_, op='chain')
+    propogate = Postfix(span=Span(s, i=0, j=22), inner=chain, op='?')
+    assert postfix(s) == (
+        propogate,
         Input.end(s),
     ), "Successful parse"

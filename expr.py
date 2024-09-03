@@ -47,11 +47,6 @@ class Id(Expr):
     pass
 
 @dataclass
-class TruePostfix(Expr):
-    # await, chain, or ?
-    op: str
-
-@dataclass
 class BinOp(Expr):
     # One of
     #   ** * @ / // /^ % + - << >> & ^ | and or
@@ -60,10 +55,25 @@ class BinOp(Expr):
     right: Expr
 
 @dataclass
-class MixFix(BinOp):
-    # op is one of
-    #   call, index, or `method`
-    method_name: Optional[str]
+class Postfix(Expr):
+    # await, chain, or ?
+    inner: Expr
+    op: str
+
+@dataclass
+class Field(Expr):
+    inner: Expr
+    field: str
+
+@dataclass
+class Call(Expr):
+    f: Expr
+    args: Expr
+
+@dataclass
+class Index(Expr):
+    container: Expr
+    index: Expr
 
 @dataclass
 class Comparison(Expr):
