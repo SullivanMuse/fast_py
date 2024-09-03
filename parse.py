@@ -18,7 +18,21 @@ floating = (
 
 name = (alpha * ("_" + alnum).many0()).span()
 ident = name.map(Id)
-atom = ident + integer
+atom = Parser()
+
+character = pred(lambda c: c not in '\\"{}').span()
+escape = (tag("\\\\") + '\\"' + "\\{" + "\\}").span()
+interpolant = "{" >> ws >> expr << ws << "}"
+string_item = character + escape + interpolant
+string = (
+    (ident.opt() * ('"' >> string_item.many0() << '"'))
+    .spanned()
+    .map(lambda x: String(x[1], x[0][0], x[0][1]))
+)
+
+atom.f = ident + string + integer + floating
+
+expr.f = atom
 
 
 def test_integer():
@@ -41,10 +55,10 @@ def test_float():
 
     s = "1.0"
     assert floating(s) == (Float(Span.all(s)), Input.end(s)), "Successful parse"
-    
+
     s = "1e5"
     assert floating(s) == (Float(Span.all(s)), Input.end(s)), "Successful parse"
-    
+
     s = "1.0e-5"
     assert floating(s) == (Float(Span.all(s)), Input.end(s)), "Successful parse"
 
@@ -58,3 +72,79 @@ def test_ident():
 
     s = "1234asdf"
     assert ident(s) is None, "Unsuccessful parse"
+
+
+def test_string():
+    s = '"Hello"'
+    assert string(s) == (
+        String(
+            Span.all(s),
+            None,
+            [
+                Span(s, 1, 2),
+                Span(s, 2, 3),
+                Span(s, 3, 4),
+                Span(s, 4, 5),
+                Span(s, 5, 6),
+            ],
+        ),
+        Input.end(s),
+    ), "Basic string"
+
+    s = 'd"2024-09-01"'
+    assert string(s) == (
+        String(
+            Span.all(s),
+            Id(Span(s, 0, 1)),
+            [
+                Span(s, 2, 3),
+                Span(s, 3, 4),
+                Span(s, 4, 5),
+                Span(s, 5, 6),
+                Span(s, 6, 7),
+                Span(s, 7, 8),
+                Span(s, 8, 9),
+                Span(s, 9, 10),
+                Span(s, 10, 11),
+                Span(s, 11, 12),
+            ],
+        ),
+        Input.end(s),
+    ), "String with modifier"
+    
+    s = '"Hello, {there}"'
+    assert string(s) == (
+        String(
+            Span.all(s),
+            None,
+            [
+                Span(s, 1, 2),
+                Span(s, 2, 3),
+                Span(s, 3, 4),
+                Span(s, 4, 5),
+                Span(s, 5, 6),
+                Span(s, 6, 7),
+                Span(s, 7, 8),
+                Id(Span(s, 9, 14)),
+            ],
+        ),
+        Input.end(s),
+    ), "String with interpolant"
+    
+    s = '"Hello\\\\!"'
+    assert string(s) == (
+        String(
+            Span.all(s),
+            None,
+            [
+                Span(s, 1, 2),
+                Span(s, 2, 3),
+                Span(s, 3, 4),
+                Span(s, 4, 5),
+                Span(s, 5, 6),
+                Span(s, 6, 8),
+                Span(s, 8, 9),
+            ],
+        ),
+        Input.end(s),
+    ), "String with escape"

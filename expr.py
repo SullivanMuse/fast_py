@@ -21,8 +21,7 @@ class Float(Expr):
 @dataclass
 class String(Expr):
     op: "Id"
-    pieces: list[str]
-    interpolants: list[Expr]
+    pieces: list[Span | Expr]
 
 @dataclass
 class Array(Expr):
