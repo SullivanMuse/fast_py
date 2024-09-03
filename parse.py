@@ -32,6 +32,16 @@ string = (
 
 array = ("[" >> expr.opt() << "]").spanned().map(lambda x: Array(x[1], x[0]))
 
+range_syntax = (
+    seq(atom.opt(), "..", tag("=").opt(), atom.opt())
+    .spanned()
+    .map(
+        lambda x: Range(
+            x[1], x[0][0], x[0][3], "clopen" if x[0][2] is None else "closed"
+        )
+    )
+)
+
 atom.f = ident + string + integer + floating + array
 
 expr.f = atom
@@ -113,7 +123,7 @@ def test_string():
         ),
         Input.end(s),
     ), "String with modifier"
-    
+
     s = '"Hello, {there}"'
     assert string(s) == (
         String(
@@ -132,7 +142,7 @@ def test_string():
         ),
         Input.end(s),
     ), "String with interpolant"
-    
+
     s = '"Hello\\\\!"'
     assert string(s) == (
         String(
@@ -151,13 +161,14 @@ def test_string():
         Input.end(s),
     ), "String with escape"
 
+
 def test_array():
     s = "[]"
     assert array(s) == (
         Array(Span.all(s), None),
         Input.end(s),
     ), "Array with no elements"
-    
+
     s = "[1]"
     assert array(s) == (
         Array(
@@ -166,7 +177,45 @@ def test_array():
         ),
         Input.end(s),
     ), "Array with single element"
-    
+
     # TODO:
     #   s = "[1, 2]"
     #   s = "[1, 2,]"
+
+def test_range():
+    s = ".."
+    
+    assert range_syntax(s) == (
+        Range(Span.all(s), None, None, "clopen"),
+        Input.end(s),
+    ), "Range all clopen"
+    
+    s = "..="
+    assert range_syntax(s) == (
+        Range(Span.all(s), None, None, "closed"),
+        Input.end(s),
+    ), "Range all closed"
+
+    s = "a..="
+    assert range_syntax(s) == (
+        Range(Span.all(s), Id(Span(s, 0, 1)), None, "closed"),
+        Input.end(s),
+    ), "Range from closed"
+
+    s = "a.."
+    assert range_syntax(s) == (
+        Range(Span.all(s), Id(Span(s, 0, 1)), None, "clopen"),
+        Input.end(s),
+    ), "Range from clopen"
+    
+    s = "..=b"
+    assert range_syntax(s) == (
+        Range(Span.all(s), None, Id(Span(s, len(s)-1, len(s))), "closed"),
+        Input.end(s),
+    ), "Range to closed"
+    
+    s = "..b"
+    assert range_syntax(s) == (
+        Range(Span.all(s), None, Id(Span(s, len(s)-1, len(s))), "clopen"),
+        Input.end(s),
+    ), "Range to clopen"
