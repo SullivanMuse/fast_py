@@ -242,7 +242,7 @@ class Parser:
 
     def opt(self):
         """
-        >>> p = tag('x').optional()
+        >>> p = tag('x').opt()
         >>> p('x')
         ('x', Input(s='x', i=1))
         >>> p('')
@@ -313,7 +313,7 @@ class Parser:
         ...     x: Any
         ...     y: Any
         ...
-        >>> p = (tag('x') * 'y').map_star(Two)
+        >>> p = (tag('x') * 'y').starmap(Two)
         >>> p('x')
         >>> p('y')
         >>> p('xy')
@@ -439,6 +439,42 @@ class Parser:
         def parse(s):
             return (not self(s)) and (None, s)
 
+        return parse
+    
+    def sep(self, other):
+        """Separate self by other
+
+        Args:
+            other (Parser | str): Delimiter
+
+        Returns:
+            Parser: parser which separates self by other
+        
+        >>> p = tag("x").sep(",")
+        >>> s = ""
+        >>> p(s)
+        ([], Input(s='', i=0))
+        >>> s = "x"
+        >>> p(s)
+        (['x'], Input(s='x', i=1))
+        >>> s = "x,x"
+        >>> p(s)
+        (['x', 'x'], Input(s='x,x', i=3))
+        >>> s = "x,x,"
+        >>> p(s)
+        (['x', 'x'], Input(s='x,x,', i=4))
+        """
+        other = parser(other)
+        @Parser
+        def parse(s):
+            xs = []
+            while (r := self(s)) is not None:
+                x, s = r
+                xs.append(x)
+                if (r := other(s)) is None:
+                    break
+                _, s = r
+            return xs, s
         return parse
 
 
