@@ -240,7 +240,7 @@ class Parser:
         """
         return self << ws
 
-    def optional(self):
+    def opt(self):
         """
         >>> p = tag('x').optional()
         >>> p('x')
@@ -306,7 +306,7 @@ class Parser:
 
         return parse
 
-    def map_star(self, f):
+    def starmap(self, f):
         """
         >>> @dataclass
         ... class Two:
@@ -442,7 +442,7 @@ class Parser:
         return parse
 
 
-def make_parser(f):
+def recursive(f):
     p = Parser()
     p.f = f(p)
     return p
@@ -561,10 +561,10 @@ def opright(rators, rand):
     else:
         p = Parser()
         rator, cls = rators[0]
-        p.f = seqspanned(rand, rator, p).map_star(cls)
+        p.f = seqspanned(rand, rator, p).starmap(cls)
 
         for rator, cls in rators[1:]:
-            p.f += seqspanned(rand, rator, p).map_star(cls)
+            p.f += seqspanned(rand, rator, p).starmap(cls)
         p.f += rand
         return p
 
