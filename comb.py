@@ -7,6 +7,10 @@ import operator as op
 class Input:
     s: str = field(default_factory=input)
     i: int = 0
+    
+    @classmethod
+    def end(cls, s):
+        return cls(s, len(s))
 
     def __bool__(self):
         """
