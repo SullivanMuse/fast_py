@@ -42,7 +42,13 @@ range_syntax = (
     )
 )
 
-atom.f = ident + string + integer + floating + array
+fn = (
+    ((tag("fn") >> ws >> "(" >> (ws >> name).sep(ws * ",") << ws << ")") * (ws >> expr))
+    .spanned()
+    .map(lambda x: Fn(x[1], x[0][0], x[0][1]))
+)
+
+atom.f = ident + string + integer + floating + array + fn
 
 expr.f = atom
 
@@ -182,13 +188,14 @@ def test_array():
     #   s = "[1, 2]"
     #   s = "[1, 2,]"
 
+
 def test_range():
     s = ".."
     assert range_syntax(s) == (
         Range(Span.all(s), None, None, "clopen"),
         Input.end(s),
     ), "Range all clopen"
-    
+
     s = "..="
     assert range_syntax(s) == (
         Range(Span.all(s), None, None, "closed"),
@@ -206,22 +213,22 @@ def test_range():
         Range(Span.all(s), Id(Span(s, 0, 1)), None, "clopen"),
         Input.end(s),
     ), "Range from clopen"
-    
+
     s = "..=b"
     assert range_syntax(s) == (
-        Range(Span.all(s), None, Id(Span(s, len(s)-1, len(s))), "closed"),
+        Range(Span.all(s), None, Id(Span(s, len(s) - 1, len(s))), "closed"),
         Input.end(s),
     ), "Range to closed"
-    
+
     s = "..b"
     assert range_syntax(s) == (
-        Range(Span.all(s), None, Id(Span(s, len(s)-1, len(s))), "clopen"),
+        Range(Span.all(s), None, Id(Span(s, len(s) - 1, len(s))), "clopen"),
         Input.end(s),
     ), "Range to clopen"
 
-    s = " .."    
+    s = " .."
     assert range_syntax(s) is None, "Bad whitespace"
-    
+
     s = " ..="
     assert range_syntax(s) is None, "Bad whitespace"
 
@@ -236,15 +243,37 @@ def test_range():
         Range(Span.all(s), Id(Span(s, 0, 1)), None, "clopen"),
         Input.end(s),
     ), "Range from clopen with whitespace"
-    
+
     s = "..= b"
     assert range_syntax(s) == (
-        Range(Span.all(s), None, Id(Span(s, len(s)-1, len(s))), "closed"),
+        Range(Span.all(s), None, Id(Span(s, len(s) - 1, len(s))), "closed"),
         Input.end(s),
     ), "Range to closed with whitespace"
-    
+
     s = ".. b"
     assert range_syntax(s) == (
-        Range(Span.all(s), None, Id(Span(s, len(s)-1, len(s))), "clopen"),
+        Range(Span.all(s), None, Id(Span(s, len(s) - 1, len(s))), "clopen"),
         Input.end(s),
     ), "Range to clopen with whitespace"
+
+
+def test_fn():
+    s = "fn(a,b,c) a"
+    assert fn(s) == (
+        Fn(
+            Span.all(s),
+            [Span(s, 3, 4), Span(s, 5, 6), Span(s, 7, 8)],
+            Id(Span(s, len(s) - 1, len(s))),
+        ),
+        Input.end(s),
+    ), "Successful parse"
+    
+    s = "fn ( a , b , c , ) a"
+    assert fn(s) == (
+        Fn(
+            Span.all(s),
+            [Span(s, 5, 6), Span(s, 9, 10), Span(s, 13, 14)],
+            Id(Span(s, len(s) - 1, len(s))),
+        ),
+        Input.end(s),
+    ), "Successful parse"

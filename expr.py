@@ -34,6 +34,11 @@ class Range(Expr):
     type: str # closed or clopen
 
 @dataclass
+class Fn(Expr):
+    params: list[Span]
+    expr: Expr
+
+@dataclass
 class Paren(Expr):
     inner: Expr
 
