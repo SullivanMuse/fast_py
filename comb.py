@@ -1,13 +1,12 @@
 from dataclasses import dataclass, field
 from typing import Any
-import operator as op
 
 
 @dataclass
 class Input:
     s: str = field(default_factory=input)
     i: int = 0
-    
+
     @classmethod
     def end(cls, s):
         return cls(s, len(s))
@@ -440,7 +439,7 @@ class Parser:
             return (not self(s)) and (None, s)
 
         return parse
-    
+
     def sep(self, other):
         """Separate self by other
 
@@ -449,7 +448,7 @@ class Parser:
 
         Returns:
             Parser: parser which separates self by other
-        
+
         >>> p = tag("x").sep(",")
         >>> s = ""
         >>> p(s)
@@ -465,6 +464,7 @@ class Parser:
         (['x', 'x'], Input(s='x,x,', i=4))
         """
         other = parser(other)
+
         @Parser
         def parse(s):
             xs = []
@@ -475,7 +475,11 @@ class Parser:
                     break
                 _, s = r
             return xs, s
+
         return parse
+
+    def mark(self, m):
+        return self.map(lambda x: (x, m))
 
 
 def recursive(f):
@@ -554,55 +558,6 @@ def seqspanned(*ps):
     ((Span(s='xyz', i=0, j=3), 'x', 'y', 'z'), Input(s='xyz', i=3))
     """
     return seqws(*ps).spanned().map(lambda x: (x[1], *x[0]))
-
-
-def opleft(rators, rand):
-    """
-    rators: [(str, cls)]
-    """
-    rators = [(kw(rator), cls) for rator, cls in rators]
-    rand <<= ws
-
-    @Parser
-    def parse(s):
-        if r := rand(s):
-            left, s1 = r
-            # While there are operators to consume
-            while True:
-                # For each candidate operator
-                for rator, cls in rators:
-                    # If there is an operator of this type
-                    if r := rator(s1):
-                        kw_op, s1 = r
-                        # If there is not an operand that is an error
-                        if r := rand(s1):
-                            right, s1 = r
-                        else:
-                            return
-                        span = s.span(s1)
-                        left = cls(span, left, kw_op, right)
-                        break
-                else:
-                    break
-            return left, s1
-
-    return parse
-
-
-def opright(rators, rand):
-    rators = [(kw(rator), cls) for rator, cls in rators]
-    rand <<= ws
-    if len(rators) == 0:
-        return rand
-    else:
-        p = Parser()
-        rator, cls = rators[0]
-        p.f = seqspanned(rand, rator, p).starmap(cls)
-
-        for rator, cls in rators[1:]:
-            p.f += seqspanned(rand, rator, p).starmap(cls)
-        p.f += rand
-        return p
 
 
 @Parser

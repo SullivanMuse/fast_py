@@ -1,12 +1,51 @@
 from comb import *
 from expr import *
 
+
+def infix_left(operand, operators):
+    tail = (ws >> operators << ws) * operand
+
+    @Parser
+    def parse(s):
+        if (r := operand(s)) is None:
+            return
+        left, s = r
+        while (r := tail(s)) is not None:
+            (op, right), s = r
+            span = left.span.span(right.span)
+            left = BinOp(span, op, left, right)
+        return left, s
+
+    return parse
+
+
+def infix_right(operand, operators):
+    return (
+        recursive(lambda self: seq(operand, (ws >> operators << ws), self) + operand)
+        .spanned()
+        .map(lambda r: BinOp(r[1], r[0][1], r[0][0], r[0][2]))
+    )
+
+
+def prefix(operand, operators):
+    return recursive(
+        lambda self: ((operators << ws) * self)
+        .spanned()
+        .map(lambda r: Prefix(r[1], r[0][0], r[0][1]))
+    )
+
+
 expr = Parser()
 
+# atom
+atom = Parser()
+
+## integer
 dec_digits = digit.many1()
 dec_run = (dec_digits * ("_" * dec_digits).many0()).span()
 integer = dec_run.map(Integer)
 
+## float
 fraction = ("." * dec_run).span()
 exponent = ("e" * tag("-").opt() * dec_run).span()
 floating = (
@@ -16,21 +55,60 @@ floating = (
     .map(Float)
 )
 
-name = (alpha * ("_" + alnum).many0()).span()
-ident = name.map(Id)
-atom = Parser()
-
+## string
+id = Parser()
 character = pred(lambda c: c not in '\\"{}').span()
 escape = (tag("\\\\") + '\\"' + "\\{" + "\\}").span()
 interpolant = "{" >> ws >> expr << ws << "}"
 string_item = character + escape + interpolant
 string = (
-    (ident.opt() * ('"' >> string_item.many0() << '"'))
+    (id.opt() * ('"' >> string_item.many0() << '"'))
     .spanned()
     .map(lambda x: String(x[1], x[0][0], x[0][1]))
 )
 
+## array
 array = ("[" >> expr.opt() << "]").spanned().map(lambda x: Array(x[1], x[0]))
+
+## id
+name = (alpha * ("_" + alnum).many0()).span()
+id.f = name.map(Id)
+
+## lambda
+lam = (
+    (("(" >> ws >> (ws >> id).sep(ws >> ",") << ws << ")") * (ws >> "->" >> ws >> expr))
+    .spanned()
+    .map(lambda x: Fn(x[1], x[0][0], x[0][1]))
+)
+
+## paren
+paren = ("(" >> ws >> expr << ws << ")").spanned().map(lambda x: Paren(x[1], x[0]))
+
+atom.f = id + string + integer + floating + array + lam + paren
+
+# operators
+
+## postfix
+call = (tag("(") >> ws >> expr << ws << ")").spanned().mark(Call)
+index = (tag("[") >> ws >> expr << ws << "]").spanned().mark(Index)
+field_ = (tag(".") >> ws >> name).spanned().mark(Field)
+await_ = (tag(".") * ws * "await").span().mark(Await)
+chain = (tag(".") * ws * "chain").span().mark(Chain)
+propogate = (ws * "?").span().mark(Propogate)
+
+
+def fix(r):
+    f, xs = r
+    for x, m in xs:
+        if len(x) == 1:
+            f = m(f.span.span(x), f)
+        else:
+            x, span = x
+            f = m(f.span.span(span), f, x)
+    return f
+
+
+postfix = (atom * (call + index + field_ + await_ + chain + propogate).many0()).map(fix)
 
 range_syntax = (
     seq((atom << ws).opt(), ".." >> tag("=").opt(), (ws >> atom).opt())
@@ -42,21 +120,19 @@ range_syntax = (
     )
 )
 
+pow = infix_right(range_syntax, "**")
+
 fn = (
     ((tag("fn") >> ws >> "(" >> (ws >> name).sep(ws * ",") << ws << ")") * (ws >> expr))
     .spanned()
     .map(lambda x: Fn(x[1], x[0][0], x[0][1]))
 )
 
-paren = ("(" >> ws >> expr << ws << ")").spanned().map(lambda x: Paren(x[1], x[0]))
-
-atom.f = ident + string + integer + floating + array + fn + paren
 
 tail = ws >> (
-    tag("?").map(lambda op: lambda x: Postfix(x[1], x[0], op))
-    + (tag(".") >> ws >> (tag("await") + "chain")).map(
-        lambda op: lambda x: Postfix(x[1], x[0], op)
-    )
+    tag("?").map(lambda _: lambda x: Propogate(x[1], x[0]))
+    + (tag(".") >> ws >> "await").map(lambda _: lambda x: Await(x[1], x[0]))
+    + (tag(".") >> ws >> "chain").map(lambda _: lambda x: Chain(x[1], x[0]))
     + (tag(".") >> ws >> name).map(lambda field: lambda x: Field(x[1], x[0], field))
     + (ws >> "(" >> ws >> expr << ws << ")").map(
         lambda args: lambda x: Call(x[1], x[0], args)
@@ -83,6 +159,14 @@ prefix = recursive(
     .map(lambda x: Prefix(x[1], x[0][0], x[0][1]))
     + postfix
 )
+
+pow = infix_right(prefix, "**")
+mul = infix_left(pow, "*" + "@" + "/" + "//" + "/^" + "%")
+add = infix_left(mul, "+" + "-")
+shift = infix_left(add, "<<" + ">>")
+bitand = infix_left(shift, "&")
+bitxor = infix_left(bitand, "^")
+bitor = infix_left(bitxor, "|")
 
 expr.f = prefix
 
@@ -117,13 +201,13 @@ def test_float():
 
 def test_ident():
     s = "asdf"
-    assert ident(s) == (Id(Span.all(s)), Input.end(s)), "Successful parse"
+    assert id(s) == (Id(Span.all(s)), Input.end(s)), "Successful parse"
 
     s = "Hello123"
-    assert ident(s) == (Id(Span.all(s)), Input.end(s)), "Successful parse"
+    assert id(s) == (Id(Span.all(s)), Input.end(s)), "Successful parse"
 
     s = "1234asdf"
-    assert ident(s) is None, "Unsuccessful parse"
+    assert id(s) is None, "Unsuccessful parse"
 
 
 def test_string():
@@ -339,9 +423,9 @@ def test_postfix():
     field_y = Field(Span(s, i=0, j=3), id_x, Span(s, i=2, j=3))
     call = Call(Span(s, i=0, j=6), field_y, Id(Span(s, i=4, j=5)))
     index = Index(Span(s, i=0, j=9), call, Id(Span(s, i=7, j=8)))
-    await_ = Postfix(Span(s, i=0, j=15), index, "await")
-    chain = Postfix(Span(s, i=0, j=21), await_, "chain")
-    propogate = Postfix(Span(s, i=0, j=22), chain, "?")
+    await_ = Await(Span(s, i=0, j=15), index)
+    chain = Chain(Span(s, i=0, j=21), await_)
+    propogate = Propogate(Span(s, i=0, j=22), chain)
     assert postfix(s) == (
         propogate,
         Input.end(s),
