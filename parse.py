@@ -22,17 +22,6 @@ def infix_left(operand, operators):
     return parse
 
 
-def test_infix_left():
-    rand = "x"
-    rator = "+"
-    p = infix_left(rand, rator)
-    s = "x+x+x+x"
-    e1 = BinOp(Span(s, 0, len(s)-4), "+", "x", "x")
-    e2 = BinOp(Span(s, 0, len(s)-2), "+", e1, "x")
-    e3 = BinOp(Span.all(s), "+", e2, "x")
-    assert p(s) == (e3, Input.end(s)), "Successful parse"
-
-
 def infix_right(operand, operators):
     operand = parser(operand)
     operators = parser(operators)
@@ -49,6 +38,34 @@ def infix_right(operand, operators):
     return parse
 
 
+def prefix(operand, operators):
+    operand = parser(operand)
+    operators = parser(operators)
+    
+    @Parser
+    def parse(s0):
+        if (r := operators(s0)) is None:
+            return operand(s0)
+        op, s = r
+        if (r := (ws >> parse)(s)) is None:
+            return
+        inner, s = r
+        return Prefix(s0.span(s), op, inner), s
+
+    return parse
+
+
+def test_infix_left():
+    rand = "x"
+    rator = "+"
+    p = infix_left(rand, rator)
+    s = "x+x+x+x"
+    e1 = BinOp(Span(s, 0, len(s)-4), "+", "x", "x")
+    e2 = BinOp(Span(s, 0, len(s)-2), "+", e1, "x")
+    e3 = BinOp(Span.all(s), "+", e2, "x")
+    assert p(s) == (e3, Input.end(s)), "Successful parse"
+
+
 def test_infix_right():
     rand = "x"
     rator = "+"
@@ -60,12 +77,18 @@ def test_infix_right():
     assert p(s) == (e3, Input.end(s)), "Successful parse"
 
 
-def prefix(operand, operators):
-    return recursive(
-        lambda self: ((operators << ws) * self)
-        .spanned()
-        .map(lambda r: Prefix(r[1], r[0][0], r[0][1]))
-    )
+def test_prefix():
+    operand = "x"
+    operator = "+"
+    
+    p = prefix(operand, operator)
+    
+    s = "+++x"
+    
+    e1 = Prefix(Span(s, 3, len(s)), "+", "x")
+    e2 = Prefix(Span(s, 2, len(s)), "+", e1)
+    e3 = Prefix(Span.all(s), "+", e2)
+    assert p(s) == (e3, Input.end(s)), "Successful pa3se"
 
 
 expr = Parser()
