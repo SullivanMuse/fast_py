@@ -3,28 +3,61 @@ from expr import *
 
 
 def infix_left(operand, operators):
+    operand = parser(operand)
+    operators = parser(operators)
+
     tail = (ws >> operators << ws) * operand
 
     @Parser
-    def parse(s):
-        if (r := operand(s)) is None:
+    def parse(s0):
+        if (r := operand(s0)) is None:
             return
         left, s = r
         while (r := tail(s)) is not None:
             (op, right), s = r
-            span = left.span.span(right.span)
+            span = s0.span(s)
             left = BinOp(span, op, left, right)
         return left, s
 
     return parse
 
 
+def test_infix_left():
+    rand = "x"
+    rator = "+"
+    p = infix_left(rand, rator)
+    s = "x+x+x+x"
+    e1 = BinOp(Span(s, 0, len(s)-4), "+", "x", "x")
+    e2 = BinOp(Span(s, 0, len(s)-2), "+", e1, "x")
+    e3 = BinOp(Span.all(s), "+", e2, "x")
+    assert p(s) == (e3, Input.end(s)), "Successful parse"
+
+
 def infix_right(operand, operators):
-    return (
-        recursive(lambda self: seq(operand, (ws >> operators << ws), self) + operand)
-        .spanned()
-        .map(lambda r: BinOp(r[1], r[0][1], r[0][0], r[0][2]))
-    )
+    operand = parser(operand)
+    operators = parser(operators)
+
+    @Parser
+    def parse(s0):
+        if (r := operand(s0)) is None:
+            return
+        left, s = r
+        if (r := ((ws >> operators << ws) * parse)(s)) is None:
+            return left, s
+        (op, right), s = r
+        return BinOp(s0.span(s), op, left, right), s
+    return parse
+
+
+def test_infix_right():
+    rand = "x"
+    rator = "+"
+    p = infix_right(rand, rator)
+    s = "x+x+x+x"
+    e1 = BinOp(Span(s, 4, len(s)), "+", "x", "x")
+    e2 = BinOp(Span(s, 2, len(s)), "+", "x", e1)
+    e3 = BinOp(Span.all(s), "+", "x", e2)
+    assert p(s) == (e3, Input.end(s)), "Successful parse"
 
 
 def prefix(operand, operators):
