@@ -1,39 +1,22 @@
 # Grammar summary
 
-## Atoms
+atom    id 1234 1.0e-5 d"Hello\\, {x}" [e] (e) (x -> e)
 
-atom
-    id
-    1234
-    1.0e-5
-    d"Hello\\, {x}"
-    [x, y, z]
-    (x)
-    x -> e
-
-# Operators
-
-postfix                 // postfix operators
-    x(y) x[y] x.y
-    x.await x.chain x?
-right **                // exponentiation
-prefix ! ~ - : ...      // negative
-left [a]..[=][b]        // range syntax
-left * @ / // /^ %      // multiplicative operators
-left + -                // additive operators
-left << >>              // shifts
-left &                  // bit and
-left ^                  // bit xor
-left |                  // bit or
-listfix                 // comparators
-    in notin
-    is isnot
-    < <= >= > == !=
-left and                // logical and
-left or                 // logical or
-listfix ,               // tuple
-
-# Compound Expressions
+left    x(y) x[y] x.y
+post    .await .chain ?
+right   **
+pre     ! ~ - : ...
+left    [a]..[=][b]
+left    * @ / // /^ %
+left    + -
+left    << >>
+left    &
+left    ^
+left    |
+listfix in notin is isnot < <= >= > == !=
+left    and
+left    or
+listfix ,
 
 block = '{' statement[;] '}'
 if = 'if' expr block ('else' 'if' block)* ('else' block)?
