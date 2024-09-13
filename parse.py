@@ -37,7 +37,7 @@ string = (
 )
 
 ## array
-array = ("[" >> expr.opt() << "]").spanned().map(lambda x: Array(x[1], x[0]))
+array = surround(expr.opt(), "[", "]", Array)
 
 ## paren
 paren = surround(expr, "(", ")",  Paren)

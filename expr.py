@@ -32,6 +32,8 @@ class String(Expr):
 @dataclass
 class Array(Expr):
     inner: Expr
+    left: str
+    right: str
 
 
 @dataclass

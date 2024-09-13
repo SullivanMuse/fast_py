@@ -2,6 +2,7 @@ from comb import Input, Span
 from expr import *
 from parse import *
 
+
 def test_integer():
     s = "1234"
     assert integer(s) == (Integer(Span.all(s)), Input.end(s)), "Successful parse"
@@ -120,16 +121,13 @@ def test_string():
 def test_array():
     s = "[]"
     assert array(s) == (
-        Array(Span.all(s), None),
+        Array(Span.all(s), None, "[", "]"),
         Input.end(s),
     ), "Array with no elements"
 
     s = "[1]"
     assert array(s) == (
-        Array(
-            Span.all(s),
-            Integer(Span(s, 1, 2)),
-        ),
+        Array(Span.all(s), Integer(Span(s, 1, 2)), "[", "]"),
         Input.end(s),
     ), "Array with single element"
 
