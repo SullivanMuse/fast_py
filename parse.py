@@ -85,8 +85,8 @@ def test_prefix():
     
     s = "+++x"
     
-    e1 = Prefix(Span(s, 3, len(s)), "+", "x")
-    e2 = Prefix(Span(s, 2, len(s)), "+", e1)
+    e1 = Prefix(Span(s, 2, len(s)), "+", "x")
+    e2 = Prefix(Span(s, 1, len(s)), "+", e1)
     e3 = Prefix(Span.all(s), "+", e2)
     assert p(s) == (e3, Input.end(s)), "Successful pa3se"
 
@@ -209,14 +209,14 @@ def fixpostfix(x):
 
 postfix = (atom * tail.spanned().many0()).map(fixpostfix)
 
-prefix = recursive(
+prefix1 = recursive(
     lambda prefix: (((tag("!") + "~" + "-" + ":" + "...") << ws) * prefix)
     .spanned()
     .map(lambda x: Prefix(x[1], x[0][0], x[0][1]))
     + postfix
 )
 
-pow = infix_right(prefix, "**")
+pow = infix_right(prefix1, "**")
 mul = infix_left(pow, "*" + "@" + "/" + "//" + "/^" + "%")
 add = infix_left(mul, "+" + "-")
 shift = infix_left(add, "<<" + ">>")
@@ -224,7 +224,7 @@ bitand = infix_left(shift, "&")
 bitxor = infix_left(bitand, "^")
 bitor = infix_left(bitxor, "|")
 
-expr.f = prefix
+expr.f = prefix1
 
 
 def test_integer():
@@ -488,7 +488,7 @@ def test_postfix():
     ), "Successful parse"
 
 
-def test_prefix():
+def test_prefix_parsers():
     s = "...!~-:x"
     id_x = Id(Span(s, i=7, j=8))
     quote = Prefix(Span(s, i=6, j=8), ":", id_x)
@@ -496,4 +496,4 @@ def test_prefix():
     complement = Prefix(Span(s, i=4, j=8), "~", negative)
     not_ = Prefix(Span(s, i=3, j=8), "!", complement)
     spread = Prefix(Span.all(s), "...", not_)
-    assert prefix(s) == (spread, Input.end(s)), "Successful parse"
+    assert prefix1(s) == (spread, Input.end(s)), "Successful parse"
