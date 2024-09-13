@@ -21,8 +21,11 @@ floating = (
     .map(Float)
 )
 
+## id
+name = (alpha * ("_" + alnum).many0()).span()
+id = name.map(Id)
+
 ## string
-id = Parser()
 character = pred(lambda c: c not in '\\"{}').span()
 escape = (tag("\\\\") + '\\"' + "\\{" + "\\}").span()
 interpolant = "{" >> ws >> expr << ws << "}"
@@ -35,10 +38,6 @@ string = (
 
 ## array
 array = ("[" >> expr.opt() << "]").spanned().map(lambda x: Array(x[1], x[0]))
-
-## id
-name = (alpha * ("_" + alnum).many0()).span()
-id.f = name.map(Id)
 
 ## lambda
 lam = (
