@@ -231,19 +231,19 @@ def test_fn():
 def test_paren():
     s = "(x)"
     assert paren(s) == (
-        Paren(Span.all(s), Id(Span(s, 1, 2))),
+        Paren(Span.all(s), Id(Span(s, 1, 2)), "(", ")"),
         Input.end(s),
     ), "Successful parse"
 
     s = "( x )"
     assert paren(s) == (
-        Paren(Span.all(s), Id(Span(s, 2, 3))),
+        Paren(Span.all(s), Id(Span(s, 2, 3)), "(", ")"),
         Input.end(s),
     ), "Successful parse"
 
     s = "( (x) )"
     assert paren(s) == (
-        Paren(Span.all(s), Paren(Span(s, 2, 5), Id(Span(s, 3, 4)))),
+        Paren(Span.all(s), Paren(Span(s, 2, 5), Id(Span(s, 3, 4)), "(", ")"), "(", ")"),
         Input.end(s),
     ), "Successful parse"
 

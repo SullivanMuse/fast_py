@@ -39,17 +39,17 @@ string = (
 ## array
 array = ("[" >> expr.opt() << "]").spanned().map(lambda x: Array(x[1], x[0]))
 
+## paren
+paren = surround(expr, "(", ")",  Paren)
+
+atom.f = integer + floating + id + string + array + paren
+
 ## lambda
 lam = (
     (("(" >> ws >> (ws >> id).sep(ws >> ",") << ws << ")") * (ws >> "->" >> ws >> expr))
     .spanned()
     .map(lambda x: Fn(x[1], x[0][0], x[0][1]))
 )
-
-## paren
-paren = ("(" >> ws >> expr << ws << ")").spanned().map(lambda x: Paren(x[1], x[0]))
-
-atom.f = id + string + integer + floating + array + lam + paren
 
 # operators
 

@@ -665,6 +665,22 @@ def post(pinner, pop, cls=lambda *args: tuple(args)):
     return parse
 
 
+def surround(pinner, pleft, pright, cls=lambda *args: tuple(args)):
+    pinner = parser(pinner)
+    pleft = pleft << ws
+    pright = ws >> pright
+
+    @Parser
+    def parse(s0):
+        r = seq(pleft, pinner, pright)(s0)
+        if r is None:
+            return
+        (left, inner, right), s = r
+        return cls(s0.span(s), inner, left, right), s
+
+    return parse
+
+
 def test_left():
     p = left("x", "+")
     s = "x+x+x+x"
@@ -703,3 +719,9 @@ def test_post():
     e2 = (Span(s, 0, 3), e1, "+")
     e3 = (Span.all(s), e2, "+")
     assert p(s) == (e3, Input.end(s)), "Successful pa3se"
+
+
+def test_surround():
+    p = surround("x", "(", ")")
+    s = "(x)"
+    assert p(s) == ((Span.all(s), "x", "(", ")"), Input.end(s)), "Successful parse"

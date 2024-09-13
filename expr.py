@@ -50,6 +50,8 @@ class Fn(Expr):
 @dataclass
 class Paren(Expr):
     inner: Expr
+    left: str
+    right: str
 
 
 @dataclass
