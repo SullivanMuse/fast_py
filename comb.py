@@ -592,3 +592,114 @@ ws = space.many0()
 
 def kw(m):
     return -tag(m).span()
+
+
+def left(pinner, pop, cls=lambda *args: tuple(args)):
+    pinner = parser(pinner)
+    pop = parser(pop)
+    tail = (ws >> pop << ws) * pinner
+
+    @Parser
+    def parse(s0):
+        if (r := pinner(s0)) is None:
+            return
+        left, s = r
+        while (r := tail(s)) is not None:
+            (op, right), s = r
+            left = cls(s0.span(s), op, left, right)
+        return left, s
+
+    return parse
+
+
+def right(pinner, pop, cls=lambda *args: tuple(args)):
+    pinner = parser(pinner)
+    pop = parser(pop)
+    parse = Parser()
+    tail = (ws >> pop << ws) * parse
+
+    def parsef(s0):
+        if (r := pinner(s0)) is None:
+            return
+        left, s = r
+        if (r := tail(s)) is None:
+            return left, s
+        (op, right), s = r
+        return cls(s0.span(s), op, left, right), s
+
+    parse.f = parsef
+    return parse
+
+
+def pre(pinner, pop, cls=lambda *args: tuple(args)):
+    pinner = ws >> pinner
+    pop = parser(pop)
+
+    @Parser
+    def parse(s0):
+        if (r := pop(s0)) is None:
+            return pinner(s0)
+        op, s = r
+        if (r := parse(s)) is None:
+            return
+        inner, s = r
+        return cls(s0.span(s), inner, op), s
+
+    return parse
+
+
+def post(pinner, pop, cls=lambda *args: tuple(args)):
+    pinner = parser(pinner)
+    pop = ws >> pop
+
+    @Parser
+    def parse(s0):
+        if (r := pinner(s0)) is None:
+            return
+        inner, s = r
+        while (r := pop(s)) is not None:
+            op, s = r
+            inner = cls(s0.span(s), inner, op)
+        return inner, s
+
+    return parse
+
+
+def test_left():
+    p = left("x", "+")
+    s = "x+x+x+x"
+
+    e1 = (Span(s, 0, len(s) - 4), "+", "x", "x")
+    e2 = (Span(s, 0, len(s) - 2), "+", e1, "x")
+    e3 = (Span.all(s), "+", e2, "x")
+    assert p(s) == (e3, Input.end(s)), "Successful parse"
+
+
+def test_right():
+    p = right("x", "+")
+    s = "x+x+x+x"
+
+    e1 = (Span(s, 4, len(s)), "+", "x", "x")
+    e2 = (Span(s, 2, len(s)), "+", "x", e1)
+    e3 = (Span.all(s), "+", "x", e2)
+    assert p(s) == (e3, Input.end(s)), "Successful parse"
+
+
+def test_pre():
+    p = pre("x", "+")
+    s = "+++x"
+
+    e1 = (Span(s, 2, len(s)), "x", "+")
+    e2 = (Span(s, 1, len(s)), e1, "+")
+    e3 = (Span.all(s), e2, "+")
+    assert p(s) == (e3, Input.end(s)), "Successful pa3se"
+
+
+def test_post():
+    p = post("x", "+")
+    s = "x+++"
+
+    e1 = (Span(s, 0, 2), "x", "+")
+    e2 = (Span(s, 0, 3), e1, "+")
+    e3 = (Span.all(s), e2, "+")
+    assert p(s) == (e3, Input.end(s)), "Successful pa3se"
