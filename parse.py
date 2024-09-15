@@ -162,10 +162,8 @@ assign = (
 
 ## use
 path = Parser()
-path_list = ("(" >> ws >> path.sep(ws >> "," << ws) << ws << ")").map(
-    PathListTerminator
-)
-path_as = (name * (ws >> "as" >> ws >> name).opt()).starmap(SimpleTerminator)
+path_list = ("(" >> ws >> path.sep(ws >> "," << ws) << ws << ")").map(PathList)
+path_as = (name * (ws >> "as" >> ws >> name).opt()).starmap(PathName)
 path.f = ((name << ws << ".").many0() * (path_as + path_list)).map(lambda x: Path(*x))
 use = ("use" >> ws >> path).spanned().map(lambda x: Use(x[1], x[0]))
 

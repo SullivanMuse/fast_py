@@ -234,25 +234,25 @@ class Let(Statement):
 
 
 @dataclass
-class Terminator:
+class PathTerminal:
     pass
 
 
 @dataclass
-class SimpleTerminator(Terminator):
-    name: Span
-    rename: Optional[Span]
+class PathName(PathTerminal):
+    source: Span
+    dest: Optional[Span]
 
 
 @dataclass
-class PathListTerminator(Terminator):
+class PathList(PathTerminal):
     paths: list[Path]
 
 
 @dataclass
 class Path:
     parents: list[Span]
-    terminator: Terminator
+    terminal: PathTerminal
 
 
 @dataclass

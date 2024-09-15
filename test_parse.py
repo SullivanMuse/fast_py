@@ -515,20 +515,20 @@ def test_use():
             span=Span(s="use x.(y, z as w, )", i=0, j=19),
             path=Path(
                 parents=[Span(s="use x.(y, z as w, )", i=4, j=5)],
-                terminator=PathListTerminator(
+                terminal=PathList(
                     paths=[
                         Path(
                             parents=[],
-                            terminator=SimpleTerminator(
-                                name=Span(s="use x.(y, z as w, )", i=7, j=8),
-                                rename=None,
+                            terminal=PathName(
+                                Span(s="use x.(y, z as w, )", i=7, j=8),
+                                None,
                             ),
                         ),
                         Path(
                             parents=[],
-                            terminator=SimpleTerminator(
-                                name=Span(s="use x.(y, z as w, )", i=10, j=11),
-                                rename=Span(s="use x.(y, z as w, )", i=15, j=16),
+                            terminal=PathName(
+                                Span(s="use x.(y, z as w, )", i=10, j=11),
+                                Span(s="use x.(y, z as w, )", i=15, j=16),
                             ),
                         ),
                     ]
