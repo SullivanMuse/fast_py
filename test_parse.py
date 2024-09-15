@@ -314,3 +314,9 @@ def test_statements():
     s = "x;y; {} x"
     r = (Statements(statements=[Id(span=Span(s='x;y; {} x', i=0, j=1)), Id(span=Span(s='x;y; {} x', i=2, j=3)), Statements(statements=[], final_semicolon=False), Id(span=Span(s='x;y; {} x', i=8, j=9))], final_semicolon=False), Input(s='x;y; {} x', i=9))
     assert statements(s) == r, "Successful parse"
+
+
+def test_if():
+    s = "if x { y } else if 5 { z }"
+    r = (If(span=Span(s='if x { y } else if 5 { z }', i=0, j=26), predicate=Id(span=Span(s='if x { y } else if 5 { z }', i=3, j=4)), consequence=Statements(statements=[Id(span=Span(s='if x { y } else if 5 { z }', i=7, j=8))], final_semicolon=False), alternative=If(span=Span(s='if x { y } else if 5 { z }', i=16, j=26), predicate=Integer(span=Span(s='if x { y } else if 5 { z }', i=19, j=20)), consequence=Statements(statements=[Id(span=Span(s='if x { y } else if 5 { z }', i=23, j=24))], final_semicolon=False), alternative=None)), Input(s='if x { y } else if 5 { z }', i=26))
+    assert if_stmt(s) == r, "Successful parse"

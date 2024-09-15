@@ -3,6 +3,7 @@ from expr import *
 
 expr = Parser()
 expr_list = Parser()
+statements = Parser()
 
 # atom
 atom = Parser()
@@ -49,6 +50,12 @@ fn = (
     .spanned()
     .map(lambda x: Fn(x[1], x[0][0], x[0][1]))
 )
+
+block = "{" >> ws >> statements << ws << "}"
+
+if_stmt = Parser()
+else_ = "else" >> ws >> (block + if_stmt)
+if_stmt.f = seq("if" >> ws >> expr << ws, block, ws >> else_.opt()).spanned().map(lambda x: If(x[1], *x[0]))
 
 atom.f = integer + floating + id + string + array + paren + fn
 
@@ -114,11 +121,7 @@ expr_list.f = expr.sep(ws * "," * ws)
 
 # Statements
 
-statements = Parser()
-
-block = "{" >> ws >> statements << ws << "}"
-
-statement = block.mark(False) + expr.mark(True)
+statement = (block + if_stmt).mark(False) + expr.mark(True)
 
 def statements_impl(s0):
     s = s0

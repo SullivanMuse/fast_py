@@ -137,8 +137,9 @@ class Tuple(Expr):
 @dataclass
 class If(Expr):
     # Invariant: len(blocks) is equal or one greater than len(predicates)
-    predicates: list[Expr]
-    blocks: list[Expr]
+    predicate: Expr
+    consequence: "Statements"
+    alternative: Optional[Expr]
 
 
 @dataclass
