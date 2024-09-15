@@ -218,3 +218,9 @@ class Path:
 @dataclass
 class Use:
     path: Path
+
+
+@dataclass
+class Statements:
+    statements: list[Statement]
+    final_semicolon: bool

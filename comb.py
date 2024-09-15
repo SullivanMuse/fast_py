@@ -501,7 +501,7 @@ class Parser:
                     break
                 op, s = r
                 ops.append(op)
-            
+
             if xs and not ops:
                 return x, s
             elif xs and ops:
@@ -513,6 +513,9 @@ class Parser:
 
     def mark(self, m):
         return self.map(lambda x: (x, m))
+
+    def bool(self):
+        return self.map(lambda x: x is not None)
 
 
 def recursive(f):

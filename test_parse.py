@@ -308,3 +308,9 @@ def test_boolean():
     s = "a and b or c and d"
     r = (BinOp(span=Span(s='a and b or c and d', i=0, j=18), op='or', left=BinOp(span=Span(s='a and b or c and d', i=0, j=7), op='and', left=Id(span=Span(s='a and b or c and d', i=0, j=1)), right=Id(span=Span(s='a and b or c and d', i=6, j=7))), right=BinOp(span=Span(s='a and b or c and d', i=11, j=18), op='and', left=Id(span=Span(s='a and b or c and d', i=11, j=12)), right=Id(span=Span(s='a and b or c and d', i=17, j=18)))), Input(s='a and b or c and d', i=18))
     assert expr(s) == r, "Successful parse"
+
+
+def test_statements():
+    s = "x;y; {} x"
+    r = (Statements(statements=[Id(span=Span(s='x;y; {} x', i=0, j=1)), Id(span=Span(s='x;y; {} x', i=2, j=3)), Statements(statements=[], final_semicolon=False), Id(span=Span(s='x;y; {} x', i=8, j=9))], final_semicolon=False), Input(s='x;y; {} x', i=9))
+    assert statements(s) == r, "Successful parse"

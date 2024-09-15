@@ -111,3 +111,25 @@ or_ = left(and_, "or", BinOp)
 expr.f = or_
 
 expr_list.f = expr.sep(ws * "," * ws)
+
+# Statements
+
+statements = Parser()
+
+block = "{" >> ws >> statements << ws << "}"
+
+statement = block.mark(False) + expr.mark(True)
+
+def statements_impl(s0):
+    s = s0
+    final_semi = False
+    stmts = []
+    sep = ws >> tag(";").opt().bool() << ws
+    while (r := statement(s)) is not None:
+        (stmt, requires_semi), s = r
+        stmts.append(stmt)
+        final_semi, s = sep(s)
+        if not final_semi and requires_semi and (r := statement(s)) is not None:
+            raise ValueError(f"Missing semicolon")
+    return Statements(stmts, final_semi), s
+statements.f = statements_impl
