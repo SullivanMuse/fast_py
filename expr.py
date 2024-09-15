@@ -230,3 +230,30 @@ class Statements:
 class Let(Statement):
     pattern: Span
     inner: Expr
+
+
+@dataclass
+class Terminator:
+    pass
+
+
+@dataclass
+class SimpleTerminator(Terminator):
+    name: Span
+    rename: Optional[Span]
+
+
+@dataclass
+class PathListTerminator(Terminator):
+    paths: list[Path]
+
+
+@dataclass
+class Path:
+    parents: list[Span]
+    terminator: Terminator
+
+
+@dataclass
+class Use(Statement):
+    path: Path

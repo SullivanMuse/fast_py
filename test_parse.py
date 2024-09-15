@@ -332,3 +332,9 @@ def test_assign():
     s = "x = 5"
     r = (Assign(span=Span(s='x = 5', i=0, j=5), pattern=Span(s='x = 5', i=0, j=1), expression=Integer(span=Span(s='x = 5', i=4, j=5))), Input(s='x = 5', i=5))
     assert assign(s) == r, "Successful parse"
+
+
+def test_use():
+    s = "use x.(y, z as w, )"
+    r = (Use(span=Span(s='use x.(y, z as w, )', i=0, j=19), path=Path(parents=[Span(s='use x.(y, z as w, )', i=4, j=5)], terminator=PathListTerminator(paths=[Path(parents=[], terminator=SimpleTerminator(name=Span(s='use x.(y, z as w, )', i=7, j=8), rename=None)), Path(parents=[], terminator=SimpleTerminator(name=Span(s='use x.(y, z as w, )', i=10, j=11), rename=Span(s='use x.(y, z as w, )', i=15, j=16)))]))), Input(s='use x.(y, z as w, )', i=19))
+    assert use(s) == r, "Successful parse"

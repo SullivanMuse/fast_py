@@ -125,7 +125,14 @@ pattern = name
 let = (("let" >> ws >> pattern << ws << "=" << ws) * expr).spanned().map(lambda x: Let(x[1], *x[0]))
 assign = ((pattern << ws << "=" << ws) * expr).spanned().map(lambda x: Assign(x[1], *x[0]))
 
-statement = (block + if_stmt).mark(False) + (let + assign + expr).mark(True)
+## use
+path = Parser()
+path_list = ("(" >> ws >> path.sep(ws >> "," << ws) << ws << ")").map(PathListTerminator)
+path_as = (name * (ws >> "as" >> ws >> name).opt()).starmap(SimpleTerminator)
+path.f = ((name << ws << ".").many0() * (path_as + path_list)).map(lambda x: Path(*x))
+use = ("use" >> ws >> path).spanned().map(lambda x: Use(x[1], x[0]))
+
+statement = (block + if_stmt).mark(False) + (let + assign + use + expr).mark(True)
 
 def statements_impl(s0):
     s = s0
