@@ -188,7 +188,7 @@ class Mutation:
 
 
 @dataclass
-class Assignment:
+class Assign(Statement):
     pattern: Id
     expression: Expr
 

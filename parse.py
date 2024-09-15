@@ -123,8 +123,9 @@ expr_list.f = expr.sep(ws * "," * ws)
 
 pattern = name
 let = (("let" >> ws >> pattern << ws << "=" << ws) * expr).spanned().map(lambda x: Let(x[1], *x[0]))
+assign = ((pattern << ws << "=" << ws) * expr).spanned().map(lambda x: Assign(x[1], *x[0]))
 
-statement = (block + if_stmt).mark(False) + (let + expr).mark(True)
+statement = (block + if_stmt).mark(False) + (let + assign + expr).mark(True)
 
 def statements_impl(s0):
     s = s0

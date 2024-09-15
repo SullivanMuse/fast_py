@@ -326,3 +326,9 @@ def test_let():
     s = "let x = 5"
     r = (Let(span=Span(s='let x = 5', i=0, j=9), pattern=Span(s='let x = 5', i=4, j=5), inner=Integer(span=Span(s='let x = 5', i=8, j=9))), Input(s='let x = 5', i=9))
     assert let(s) == r, "Successful parse"
+
+
+def test_assign():
+    s = "x = 5"
+    r = (Assign(span=Span(s='x = 5', i=0, j=5), pattern=Span(s='x = 5', i=0, j=1), expression=Integer(span=Span(s='x = 5', i=4, j=5))), Input(s='x = 5', i=5))
+    assert assign(s) == r, "Successful parse"
