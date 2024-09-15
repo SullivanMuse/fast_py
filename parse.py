@@ -82,7 +82,7 @@ if_stmt.f = (
     .map(lambda x: If(x[1], *x[0]))
 )
 
-basic.f = integer + floating + id + string + array + paren + fn
+basic.f = integer + floating + id + string + array + paren + fn + if_stmt
 
 # operators
 
