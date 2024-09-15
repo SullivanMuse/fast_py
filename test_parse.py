@@ -269,14 +269,22 @@ def test_pre_exprs():
     complement = Prefix(Span(s, i=4, j=8), "~", negative)
     not_ = Prefix(Span(s, i=3, j=8), "!", complement)
     spread = Prefix(Span.all(s), "...", not_)
-    assert prefix1(s) == (spread, Input.end(s)), "Successful parse"
+    assert pre_exprs(s) == (spread, Input.end(s)), "Successful parse"
 
 
 def test_range_syntax():
     s = "x..y"
     assert range_syntax(s) == (Range(Span.all(s), Id(Span(s, 0, 1)), Id(Span(s, 3, 4)), "clopen"), Input.end(s)), "Successful parse"
+    
+    s = "x..=y"
+    assert range_syntax(s) == (Range(Span.all(s), Id(Span(s, 0, 1)), Id(Span(s, 4, 5)), "closed"), Input.end(s)), "Successful parse"
 
 
 def test_pow():
     s = "x**y"
     assert pow(s) == (BinOp(Span.all(s), "**", Id(Span(s, 0, 1)), Id(Span(s, 3, 4))), Input.end(s)), "Successful parse"
+
+
+def test_lam():
+    s = "fn(x) x"
+    assert fn(s) == (Fn(Span.all(s), [Span(s, 3, 4)], Id(Span(s, len(s) - 1, len(s)))), Input.end(s)), "Successful parse"

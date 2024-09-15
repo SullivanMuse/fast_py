@@ -44,13 +44,6 @@ paren = surround(expr, "(", ")",  Paren)
 
 atom.f = integer + floating + id + string + array + paren
 
-## lambda
-lam = (
-    (("(" >> ws >> (ws >> id).sep(ws >> ",") << ws << ")") * (ws >> "->" >> ws >> expr))
-    .spanned()
-    .map(lambda x: Fn(x[1], x[0][0], x[0][1]))
-)
-
 # operators
 
 ## postfix
@@ -65,15 +58,15 @@ propogate = (ws * "?").span().mark(Propogate)
 def fix(r):
     f, xs = r
     for x, m in xs:
-        if len(x) == 1:
-            f = m(f.span.span(x), f)
-        else:
+        if isinstance(x, tuple):
             x, span = x
             f = m(f.span.span(span), f, x)
+        else:
+            f = m(f.span.span(x), f)
     return f
 
 
-post_exprs = (atom * (call + index + field_ + await_ + chain + propogate).many0()).map(fix)
+post_exprs = (atom * (call + index + await_ + chain + field_ + propogate).many0()).map(fix)
 
 range_syntax = (
     seq((atom << ws).opt(), ".." >> tag("=").opt(), (ws >> atom).opt())
@@ -91,45 +84,19 @@ fn = (
     .map(lambda x: Fn(x[1], x[0][0], x[0][1]))
 )
 
-
-tail = ws >> (
-    tag("?").map(lambda _: lambda x: Propogate(x[1], x[0]))
-    + (tag(".") >> ws >> "await").map(lambda _: lambda x: Await(x[1], x[0]))
-    + (tag(".") >> ws >> "chain").map(lambda _: lambda x: Chain(x[1], x[0]))
-    + (tag(".") >> ws >> name).map(lambda field: lambda x: Field(x[1], x[0], field))
-    + (ws >> "(" >> ws >> expr << ws << ")").map(
-        lambda args: lambda x: Call(x[1], x[0], args)
-    )
-    + (ws >> "[" >> ws >> expr << ws << "]").map(
-        lambda args: lambda x: Index(x[1], x[0], args)
-    )
-)
-
-
-def fixpostfix(x):
-    f, xs = x
-    for x, span in xs:
-        span = f.span.span(span)
-        f = x((f, span))
-    return f
-
-
-post_exprs = (atom * tail.spanned().many0()).map(fixpostfix)
-
-prefix1 = recursive(
+pre_exprs = recursive(
     lambda prefix: (((tag("!") + "~" + "-" + ":" + "...") << ws) * prefix)
     .spanned()
     .map(lambda x: Prefix(x[1], x[0][0], x[0][1]))
     + post_exprs
 )
 
+pow = right(pre_exprs, "**", BinOp)
+mul = left(pow, "*" + "@" + "/" + "//" + "/^" + "%", BinOp)
+add = left(mul, "+" + "-", BinOp)
+shift = left(add, "<<" + ">>", BinOp)
+bitand = left(shift, "&", BinOp)
+bitxor = left(bitand, "^", BinOp)
+bitor = left(bitxor, "|", BinOp)
 
-pow = right(prefix1, "**", BinOp)
-mul = left(pow, "*" + "@" + "/" + "//" + "/^" + "%")
-add = left(mul, "+" + "-")
-shift = left(add, "<<" + ">>")
-bitand = left(shift, "&")
-bitxor = left(bitand, "^")
-bitor = left(bitxor, "|")
-
-expr.f = prefix1
+expr.f = bitor
