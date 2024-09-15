@@ -1,6 +1,23 @@
 # Grammar summary
 
-atom    id 1234 1.0e-5 d"Hello\\, {x}" [e] (e) (x -> e)
+basic
+    id
+    1234
+    1.0e-5
+    d"Hello\\, {x}"
+    [e]
+    (e)
+
+Introduced expressions
+    fn(x) { e }
+    block = '{' statement[;] '}'
+    if = 'if' expr block ['else' (if | block)]
+    *return = 'return' expr?
+    *break = 'break'
+    *continue = 'continue'
+    *for = 'for' expr 'in' expr block
+    *while = 'while' expr block
+    *loop = 'loop' block
 
 left    x(y) x[y] x.y
 post    .await .chain ?
@@ -18,21 +35,15 @@ left    and
 left    or
 listfix ,
 
-block = '{' statement[;] '}'
-if = 'if' expr block ('else' 'if' block)* ('else' block)?
-
 # Statements
 
-fn = 'fn' name '(' id[,] ')' block
-return = 'return' expr?
-break = 'break'
-continue = 'continue'
-for = 'for' expr 'in' expr block
-while = 'while' expr block
-loop = 'loop' block
+## Requiring semi-colon
 use = 'use' path
     path = (name '.')* id ('as' id)? | '(' path[,] ')'
 let = 'let' pattern '=' expr
 assign = view '=' expr
+
+## Not requiring semicolon
+fn = 'fn' name '(' id[,] ')' block
 
 statement = fn | return | break | continue | for | while | loop | use | let | assign
