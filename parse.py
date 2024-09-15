@@ -2,6 +2,7 @@ from comb import *
 from expr import *
 
 expr = Parser()
+expr_list = Parser()
 
 # atom
 atom = Parser()
@@ -37,7 +38,7 @@ string = (
 )
 
 ## array
-array = surround(expr.opt(), "[", "]", Array)
+array = surround(expr_list.opt(), "[", "]", Array)
 
 ## paren
 paren = surround(expr, "(", ")",  Paren)
@@ -104,4 +105,9 @@ bitor = left(bitxor, tag("|"), BinOp)
 comparator = tag("in") + "notin" + "isnot" + "is" + "<=" + ">=" + "<" + ">" + "==" + "!="
 comparison = bitor.listfix(comparator, Comparison)
 
-expr.f = comparison
+and_ = left(comparison, "and", BinOp)
+or_ = left(and_, "or", BinOp)
+
+expr.f = or_
+
+expr_list.f = expr.sep(ws * "," * ws)

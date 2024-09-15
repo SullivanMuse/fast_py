@@ -121,13 +121,13 @@ def test_string():
 def test_array():
     s = "[]"
     assert array(s) == (
-        Array(Span.all(s), None, "[", "]"),
+        Array(Span.all(s), [], "[", "]"),
         Input.end(s),
     ), "Array with no elements"
 
     s = "[1]"
     assert array(s) == (
-        Array(Span.all(s), Integer(Span(s, 1, 2)), "[", "]"),
+        Array(Span.all(s), [Integer(Span(s, 1, 2))], "[", "]"),
         Input.end(s),
     ), "Array with single element"
 
@@ -303,3 +303,8 @@ def test_comparison():
     
     r = (Comparison(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=0, j=57), ops=['is', 'isnot', 'in', 'notin', '<=', '>=', '<', '>', '==', '!='], inner=[Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=0, j=1)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=5, j=6)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=13, j=14)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=18, j=19)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=26, j=27)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=31, j=32)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=36, j=37)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=40, j=41)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=44, j=45)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=49, j=51)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=55, j=57))]), Input(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=57))
     assert comparison(s) == r, "Successful parse"
+
+def test_boolean():
+    s = "a and b or c and d"
+    r = (BinOp(span=Span(s='a and b or c and d', i=0, j=18), op='or', left=BinOp(span=Span(s='a and b or c and d', i=0, j=7), op='and', left=Id(span=Span(s='a and b or c and d', i=0, j=1)), right=Id(span=Span(s='a and b or c and d', i=6, j=7))), right=BinOp(span=Span(s='a and b or c and d', i=11, j=18), op='and', left=Id(span=Span(s='a and b or c and d', i=11, j=12)), right=Id(span=Span(s='a and b or c and d', i=17, j=18)))), Input(s='a and b or c and d', i=18))
+    assert expr(s) == r, "Successful parse"

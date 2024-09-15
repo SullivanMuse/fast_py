@@ -31,7 +31,7 @@ class String(Expr):
 
 @dataclass
 class Array(Expr):
-    inner: Expr
+    inner: list[Expr]
     left: str
     right: str
 
