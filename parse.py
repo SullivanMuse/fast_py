@@ -42,7 +42,14 @@ array = surround(expr.opt(), "[", "]", Array)
 ## paren
 paren = surround(expr, "(", ")",  Paren)
 
-atom.f = integer + floating + id + string + array + paren
+## Function literal
+fn = (
+    ((tag("fn") >> ws >> "(" >> (ws >> name).sep(ws * ",") << ws << ")") * (ws >> expr))
+    .spanned()
+    .map(lambda x: Fn(x[1], x[0][0], x[0][1]))
+)
+
+atom.f = integer + floating + id + string + array + paren + fn
 
 # operators
 
@@ -68,31 +75,26 @@ def fix(r):
 
 post_exprs = (atom * (call + index + await_ + chain + field_ + propogate).many0()).map(fix)
 
+pow = right(post_exprs, "**", BinOp)
+
+pre_exprs = recursive(
+    lambda prefix: (((tag("!") + "~" + "-" + ":" + "...") << ws) * prefix)
+    .spanned()
+    .map(lambda x: Prefix(x[1], x[0][0], x[0][1]))
+    + pow
+)
+
 range_syntax = (
-    seq((atom << ws).opt(), ".." >> tag("=").opt(), (ws >> atom).opt())
+    seq((pre_exprs << ws).opt(), ".." >> tag("=").opt(), (ws >> pre_exprs).opt())
     .spanned()
     .map(
         lambda x: Range(
             x[1], x[0][0], x[0][2], "clopen" if x[0][1] is None else "closed"
         )
     )
-)
+) + pre_exprs
 
-fn = (
-    ((tag("fn") >> ws >> "(" >> (ws >> name).sep(ws * ",") << ws << ")") * (ws >> expr))
-    .spanned()
-    .map(lambda x: Fn(x[1], x[0][0], x[0][1]))
-)
-
-pre_exprs = recursive(
-    lambda prefix: (((tag("!") + "~" + "-" + ":" + "...") << ws) * prefix)
-    .spanned()
-    .map(lambda x: Prefix(x[1], x[0][0], x[0][1]))
-    + post_exprs
-)
-
-pow = right(pre_exprs, "**", BinOp)
-mul = left(pow, tag("*") + "@" + "//" + "/^" + "/" + "%", BinOp)
+mul = left(range_syntax, tag("*") + "@" + "//" + "/^" + "/" + "%", BinOp)
 add = left(mul, tag("+") + "-", BinOp)
 shift = left(add, tag("<<") + ">>", BinOp)
 bitand = left(shift, tag("&"), BinOp)
