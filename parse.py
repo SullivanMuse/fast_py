@@ -6,7 +6,7 @@ expr_list = Parser()
 statements = Parser()
 
 # atom
-atom = Parser()
+basic = Parser()
 
 ## integer
 dec_digits = digit.many1()
@@ -57,7 +57,7 @@ if_stmt = Parser()
 else_ = "else" >> ws >> (block + if_stmt)
 if_stmt.f = seq("if" >> ws >> expr << ws, block, ws >> else_.opt()).spanned().map(lambda x: If(x[1], *x[0]))
 
-atom.f = integer + floating + id + string + array + paren + fn
+basic.f = integer + floating + id + string + array + paren + fn
 
 # operators
 
@@ -81,7 +81,7 @@ def fix(r):
     return f
 
 
-post_exprs = (atom * (call + index + await_ + chain + field_ + propogate).many0()).map(fix)
+post_exprs = (basic * (call + index + await_ + chain + field_ + propogate).many0()).map(fix)
 
 pow = right(post_exprs, "**", BinOp)
 
@@ -121,7 +121,10 @@ expr_list.f = expr.sep(ws * "," * ws)
 
 # Statements
 
-statement = (block + if_stmt).mark(False) + expr.mark(True)
+pattern = name
+let = (("let" >> ws >> pattern << ws << "=" << ws) * expr).spanned().map(lambda x: Let(x[1], *x[0]))
+
+statement = (block + if_stmt).mark(False) + (let + expr).mark(True)
 
 def statements_impl(s0):
     s = s0

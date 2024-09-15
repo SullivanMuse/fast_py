@@ -320,3 +320,9 @@ def test_if():
     s = "if x { y } else if 5 { z }"
     r = (If(span=Span(s='if x { y } else if 5 { z }', i=0, j=26), predicate=Id(span=Span(s='if x { y } else if 5 { z }', i=3, j=4)), consequence=Statements(statements=[Id(span=Span(s='if x { y } else if 5 { z }', i=7, j=8))], final_semicolon=False), alternative=If(span=Span(s='if x { y } else if 5 { z }', i=16, j=26), predicate=Integer(span=Span(s='if x { y } else if 5 { z }', i=19, j=20)), consequence=Statements(statements=[Id(span=Span(s='if x { y } else if 5 { z }', i=23, j=24))], final_semicolon=False), alternative=None)), Input(s='if x { y } else if 5 { z }', i=26))
     assert if_stmt(s) == r, "Successful parse"
+
+
+def test_let():
+    s = "let x = 5"
+    r = (Let(span=Span(s='let x = 5', i=0, j=9), pattern=Span(s='let x = 5', i=4, j=5), inner=Integer(span=Span(s='let x = 5', i=8, j=9))), Input(s='let x = 5', i=9))
+    assert let(s) == r, "Successful parse"
