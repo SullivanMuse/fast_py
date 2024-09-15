@@ -132,7 +132,11 @@ path_as = (name * (ws >> "as" >> ws >> name).opt()).starmap(SimpleTerminator)
 path.f = ((name << ws << ".").many0() * (path_as + path_list)).map(lambda x: Path(*x))
 use = ("use" >> ws >> path).spanned().map(lambda x: Use(x[1], x[0]))
 
-statement = (block + if_stmt).mark(False) + (let + assign + use + expr).mark(True)
+fn_stmt = (seq("fn" >> ws >> name << ws, "(" >> ws >> name.sep(ws * "," * ws) << ws << ")", ws >> expr)
+    .spanned()
+    .map(lambda x: FnNamed(x[1], x[0][0], x[0][1], x[0][2])))
+
+statement = (block + if_stmt + fn_stmt).mark(False) + (let + assign + use + expr).mark(True)
 
 def statements_impl(s0):
     s = s0

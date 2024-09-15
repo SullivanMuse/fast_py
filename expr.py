@@ -257,3 +257,10 @@ class Path:
 @dataclass
 class Use(Statement):
     path: Path
+
+
+@dataclass
+class FnNamed(Statement):
+    name: Span
+    args: list[Span]
+    expr: Expr

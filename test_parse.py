@@ -338,3 +338,13 @@ def test_use():
     s = "use x.(y, z as w, )"
     r = (Use(span=Span(s='use x.(y, z as w, )', i=0, j=19), path=Path(parents=[Span(s='use x.(y, z as w, )', i=4, j=5)], terminator=PathListTerminator(paths=[Path(parents=[], terminator=SimpleTerminator(name=Span(s='use x.(y, z as w, )', i=7, j=8), rename=None)), Path(parents=[], terminator=SimpleTerminator(name=Span(s='use x.(y, z as w, )', i=10, j=11), rename=Span(s='use x.(y, z as w, )', i=15, j=16)))]))), Input(s='use x.(y, z as w, )', i=19))
     assert use(s) == r, "Successful parse"
+
+
+def test_fn_name():
+    s = "fn name(a, b, c) e"
+    r = (FnNamed(span=Span(s='fn name(a, b, c) e', i=0, j=18), name=Span(s='fn name(a, b, c) e', i=3, j=7), args=[Span(s='fn name(a, b, c) e', i=8, j=9), Span(s='fn name(a, b, c) e', i=11, j=12), Span(s='fn name(a, b, c) e', i=14, j=15)], expr=Id(span=Span(s='fn name(a, b, c) e', i=17, j=18))), Input(s='fn name(a, b, c) e', i=18))
+    assert fn_stmt(s) == r, "Successful parse"
+
+    s = "fn name( a , b , c , ) a"
+    r = (FnNamed(span=Span(s='fn name( a , b , c , ) a', i=0, j=24), name=Span(s='fn name( a , b , c , ) a', i=3, j=7), args=[Span(s='fn name( a , b , c , ) a', i=9, j=10), Span(s='fn name( a , b , c , ) a', i=13, j=14), Span(s='fn name( a , b , c , ) a', i=17, j=18)], expr=Id(span=Span(s='fn name( a , b , c , ) a', i=23, j=24))), Input(s='fn name( a , b , c , ) a', i=24))
+    assert fn_stmt(s) == r, "Successful parse"
