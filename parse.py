@@ -92,11 +92,11 @@ pre_exprs = recursive(
 )
 
 pow = right(pre_exprs, "**", BinOp)
-mul = left(pow, "*" + "@" + "/" + "//" + "/^" + "%", BinOp)
-add = left(mul, "+" + "-", BinOp)
-shift = left(add, "<<" + ">>", BinOp)
-bitand = left(shift, "&", BinOp)
-bitxor = left(bitand, "^", BinOp)
-bitor = left(bitxor, "|", BinOp)
+mul = left(pow, tag("*") + "@" + "//" + "/^" + "/" + "%", BinOp)
+add = left(mul, tag("+") + "-", BinOp)
+shift = left(add, tag("<<") + ">>", BinOp)
+bitand = left(shift, tag("&"), BinOp)
+bitxor = left(bitand, tag("^"), BinOp)
+bitor = left(bitxor, tag("|"), BinOp)
 
 expr.f = bitor

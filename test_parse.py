@@ -288,3 +288,12 @@ def test_pow():
 def test_lam():
     s = "fn(x) x"
     assert fn(s) == (Fn(Span.all(s), [Span(s, 3, 4)], Id(Span(s, len(s) - 1, len(s)))), Input.end(s)), "Successful parse"
+
+def test_binop():
+    for op in ["*", "@", "/", "%", "+", "-", "&", "^", "|"]:
+        s = f"x{op}x"
+        assert expr(s) == (BinOp(Span(s, 0, 3), op, Id(Span(s, 0, 1)), Id(Span(s, 2, 3))), Input(s, 3)), "Successful parse"
+    
+    for op in ["//", "/^", "<<", ">>"]:
+        s = f"x{op}x"
+        assert expr(s) == (BinOp(Span(s, 0, 4), op, Id(Span(s, 0, 1)), Id(Span(s, 3, 4))), Input(s, 4)), "Successful parse"
