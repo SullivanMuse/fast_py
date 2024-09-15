@@ -77,6 +77,8 @@ class Parser:
 
     def __add__(self, other):
         """
+        Alternative
+        
         >>> p = tag('x') + 'y'
         >>> p('z')
         >>> p('x')
@@ -94,6 +96,8 @@ class Parser:
 
     def __radd__(self, other):
         """
+        Alternative
+        
         >>> p = 'x' + tag('y')
         >>> p('z')
         >>> p('x')
@@ -106,6 +110,8 @@ class Parser:
 
     def __mul__(self, other):
         """
+        Sequence
+        
         >>> p = tag('x') * 'y'
         >>> p('x')
         >>> p('y')
@@ -126,6 +132,8 @@ class Parser:
 
     def __rmul__(self, other):
         """
+        Sequence
+        
         >>> p = 'x' * tag('y')
         >>> p('x')
         >>> p('y')
@@ -137,6 +145,8 @@ class Parser:
 
     def __pow__(self, n):
         """
+        Repeat
+        
         >>> p = tag('x') ** 5
         >>> p('xxx')
         >>> p('xxxxx')
@@ -152,6 +162,8 @@ class Parser:
 
     def __getitem__(self, other):
         """
+        Separated by
+        
         >>> p = tag('x')[',']
         >>> p('x')
         ((['x'], []), Input(s='x', i=1))
@@ -184,7 +196,7 @@ class Parser:
         >>> p('xy')
         ('x', Input(s='xy', i=2))
         """
-        return (self * other).left()
+        return (self * other).index(0)
 
     def __rlshift__(self, other):
         """
@@ -201,7 +213,7 @@ class Parser:
         >>> p('xy')
         ('y', Input(s='xy', i=2))
         """
-        return (self * other).right()
+        return (self * other).index(1)
 
     def __rrshift__(self, other):
         """
@@ -211,33 +223,6 @@ class Parser:
         """
         other = parser(other)
         return other >> self
-
-    def __pos__(self):
-        """
-        >>> p = +tag('x')
-        >>> p('x')
-        ('x', Input(s='x', i=1))
-        >>> p(' x')
-        ('x', Input(s=' x', i=2))
-        >>> p('  x')
-        ('x', Input(s='  x', i=3))
-        >>> p('x ')
-        ('x', Input(s='x ', i=1))
-        """
-        return ws >> self
-
-    def __neg__(self):
-        """
-        >>> p = -tag('x')
-        >>> p(' x')
-        >>> p('x')
-        ('x', Input(s='x', i=1))
-        >>> p('x ')
-        ('x', Input(s='x ', i=2))
-        >>> p('x  ')
-        ('x', Input(s='x  ', i=3))
-        """
-        return self << ws
 
     def opt(self):
         """
@@ -359,24 +344,6 @@ class Parser:
         """
         return self.map(lambda x: x[i])
 
-    def left(self):
-        """
-        >>> p = tag('x') * 'y'
-        >>> p1 = p.left()
-        >>> p1('xy')
-        ('x', Input(s='xy', i=2))
-        """
-        return self.index(0)
-
-    def right(self):
-        """
-        >>> p = tag('x') * 'y'
-        >>> p2 = p.right()
-        >>> p2('xy')
-        ('y', Input(s='xy', i=2))
-        """
-        return self.index(1)
-
     def spanned(self):
         """
         >>> p = (tag('x') * 'y').spanned()
@@ -399,7 +366,7 @@ class Parser:
         >>> p('xy')
         (Span(s='xy', i=0, j=2), Input(s='xy', i=2))
         """
-        return self.spanned().right()
+        return self.spanned().index(1)
 
     def stringed(self):
         """
@@ -423,7 +390,7 @@ class Parser:
         >>> p('xy')
         ('xy', Input(s='xy', i=2))
         """
-        return self.stringed().right()
+        return self.stringed().index(1)
 
     def negate(self):
         """
@@ -571,31 +538,6 @@ def seq(*ps):
     return parse
 
 
-def seqws(*ps):
-    """
-    >>> p = seqws('x', 'y', 'z')
-    >>> p('xyz')
-    (('x', 'y', 'z'), Input(s='xyz', i=3))
-    >>> p('x y z')
-    (('x', 'y', 'z'), Input(s='x y z', i=5))
-    >>> p('x y z ')
-    (('x', 'y', 'z'), Input(s='x y z ', i=6))
-    >>> p('x  y  z  ')
-    (('x', 'y', 'z'), Input(s='x  y  z  ', i=9))
-    """
-    return seq(*(-parser(p) for p in ps))
-
-
-def seqspanned(*ps):
-    """
-    >>> p = seqspanned('x', 'y', 'z')
-    >>> p('xy')
-    >>> p('xyz')
-    ((Span(s='xyz', i=0, j=3), 'x', 'y', 'z'), Input(s='xyz', i=3))
-    """
-    return seqws(*ps).spanned().map(lambda x: (x[1], *x[0]))
-
-
 @Parser
 def one(s):
     """
@@ -624,10 +566,6 @@ upper = pred(str.isupper)
 space = pred(str.isspace)
 
 ws = space.many0()
-
-
-def kw(m):
-    return -tag(m).span()
 
 
 def left(pinner, pop, cls=lambda *args: tuple(args)):
