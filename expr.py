@@ -125,8 +125,8 @@ class Comparison(Expr):
     # Invariant: len(inner) == len(comparators) + 1
     # Each comparator is one of
     #   in notin is isnot < <= > >= == !=
-    comparators: list[str]
-    inner: list[Expr]
+    ops: list[Expr]
+    inner: list[str]
 
 
 @dataclass

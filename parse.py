@@ -101,4 +101,7 @@ bitand = left(shift, tag("&"), BinOp)
 bitxor = left(bitand, tag("^"), BinOp)
 bitor = left(bitxor, tag("|"), BinOp)
 
-expr.f = bitor
+comparator = tag("in") + "notin" + "isnot" + "is" + "<=" + ">=" + "<" + ">" + "==" + "!="
+comparison = bitor.listfix(comparator, Comparison)
+
+expr.f = comparison

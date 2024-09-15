@@ -478,6 +478,39 @@ class Parser:
 
         return parse
 
+    def listfix(self, other, cls=lambda *args: tuple(args)):
+        """Separate self by other
+
+        Args:
+            other (Parser | str): Delimiter
+
+        Returns:
+            Parser: parser which separates self by other, including other in the constructor
+        """
+        other = ws >> parser(other) << ws
+
+        @Parser
+        def parse(s0):
+            s = s0
+            xs = []
+            ops = []
+            while (r := self(s)) is not None:
+                x, s = r
+                xs.append(x)
+                if (r := other(s)) is None:
+                    break
+                op, s = r
+                ops.append(op)
+            
+            if xs and not ops:
+                return x, s
+            elif xs and ops:
+                return cls(s0.span(s), ops, xs), s
+            else:
+                return
+
+        return parse
+
     def mark(self, m):
         return self.map(lambda x: (x, m))
 

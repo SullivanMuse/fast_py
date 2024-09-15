@@ -297,3 +297,9 @@ def test_binop():
     for op in ["//", "/^", "<<", ">>"]:
         s = f"x{op}x"
         assert expr(s) == (BinOp(Span(s, 0, 4), op, Id(Span(s, 0, 1)), Id(Span(s, 3, 4))), Input(s, 4)), "Successful parse"
+
+def test_comparison():
+    s = "1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11"
+    
+    r = (Comparison(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=0, j=57), ops=['is', 'isnot', 'in', 'notin', '<=', '>=', '<', '>', '==', '!='], inner=[Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=0, j=1)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=5, j=6)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=13, j=14)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=18, j=19)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=26, j=27)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=31, j=32)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=36, j=37)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=40, j=41)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=44, j=45)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=49, j=51)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=55, j=57))]), Input(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=57))
+    assert comparison(s) == r, "Successful parse"
