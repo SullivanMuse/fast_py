@@ -73,7 +73,7 @@ def fix(r):
     return f
 
 
-postfix1 = (atom * (call + index + field_ + await_ + chain + propogate).many0()).map(fix)
+post_exprs = (atom * (call + index + field_ + await_ + chain + propogate).many0()).map(fix)
 
 range_syntax = (
     seq((atom << ws).opt(), ".." >> tag("=").opt(), (ws >> atom).opt())
@@ -84,8 +84,6 @@ range_syntax = (
         )
     )
 )
-
-pow = right(range_syntax, "**")
 
 fn = (
     ((tag("fn") >> ws >> "(" >> (ws >> name).sep(ws * ",") << ws << ")") * (ws >> expr))
@@ -116,16 +114,17 @@ def fixpostfix(x):
     return f
 
 
-postfix1 = (atom * tail.spanned().many0()).map(fixpostfix)
+post_exprs = (atom * tail.spanned().many0()).map(fixpostfix)
 
 prefix1 = recursive(
     lambda prefix: (((tag("!") + "~" + "-" + ":" + "...") << ws) * prefix)
     .spanned()
     .map(lambda x: Prefix(x[1], x[0][0], x[0][1]))
-    + postfix1
+    + post_exprs
 )
 
-pow = right(prefix1, "**")
+
+pow = right(prefix1, "**", BinOp)
 mul = left(pow, "*" + "@" + "/" + "//" + "/^" + "%")
 add = left(mul, "+" + "-")
 shift = left(add, "<<" + ">>")

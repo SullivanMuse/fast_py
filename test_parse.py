@@ -246,7 +246,7 @@ def test_paren():
     ), "Successful parse"
 
 
-def test_postfix1():
+def test_post_exprs():
     s = "x.y(a)[c].await.chain?"
     id_x = Id(Span(s, i=0, j=1))
     field_y = Field(Span(s, i=0, j=3), id_x, Span(s, i=2, j=3))
@@ -255,13 +255,13 @@ def test_postfix1():
     await_ = Await(Span(s, i=0, j=15), index)
     chain = Chain(Span(s, i=0, j=21), await_)
     propogate = Propogate(Span(s, i=0, j=22), chain)
-    assert postfix1(s) == (
+    assert post_exprs(s) == (
         propogate,
         Input.end(s),
     ), "Successful parse"
 
 
-def test_prefix_parsers():
+def test_pre_exprs():
     s = "...!~-:x"
     id_x = Id(Span(s, i=7, j=8))
     quote = Prefix(Span(s, i=6, j=8), ":", id_x)
@@ -270,3 +270,13 @@ def test_prefix_parsers():
     not_ = Prefix(Span(s, i=3, j=8), "!", complement)
     spread = Prefix(Span.all(s), "...", not_)
     assert prefix1(s) == (spread, Input.end(s)), "Successful parse"
+
+
+def test_range_syntax():
+    s = "x..y"
+    assert range_syntax(s) == (Range(Span.all(s), Id(Span(s, 0, 1)), Id(Span(s, 3, 4)), "clopen"), Input.end(s)), "Successful parse"
+
+
+def test_pow():
+    s = "x**y"
+    assert pow(s) == (BinOp(Span.all(s), "**", Id(Span(s, 0, 1)), Id(Span(s, 3, 4))), Input.end(s)), "Successful parse"
