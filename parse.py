@@ -24,24 +24,27 @@ floating = (
 )
 
 ## id
-keywords = (tag("if") +
-            "else" + 
-            
-            "use" +
-            "fn" +
-            "await" +
-            "chain" +
-            
-            "loop" +
-            "while" +
-            "for" +
-            "repeat" +
-            "break" +
-            "continue" +
-            "return" +
-            
-            "and" + "or" +
-            "in" + "notin" + "isnot" + "is")
+keywords = (
+    tag("if")
+    + "else"
+    + "use"
+    + "fn"
+    + "await"
+    + "chain"
+    + "loop"
+    + "while"
+    + "for"
+    + "repeat"
+    + "break"
+    + "continue"
+    + "return"
+    + "and"
+    + "or"
+    + "in"
+    + "notin"
+    + "isnot"
+    + "is"
+)
 name = (keywords.negate() * alpha * ("_" + alnum).many0()).span()
 id = name.map(Id)
 
@@ -60,7 +63,7 @@ string = (
 array = surround(expr_list.opt(), "[", "]", Array)
 
 ## paren
-paren = surround(expr, "(", ")",  Paren)
+paren = surround(expr, "(", ")", Paren)
 
 ## Function literal
 fn = (
@@ -73,7 +76,11 @@ block = "{" >> ws >> statements << ws << "}"
 
 if_stmt = Parser()
 else_ = "else" >> ws >> (block + if_stmt)
-if_stmt.f = seq("if" >> ws >> expr << ws, block, ws >> else_.opt()).spanned().map(lambda x: If(x[1], *x[0]))
+if_stmt.f = (
+    seq("if" >> ws >> expr << ws, block, ws >> else_.opt())
+    .spanned()
+    .map(lambda x: If(x[1], *x[0]))
+)
 
 basic.f = integer + floating + id + string + array + paren + fn
 
@@ -99,7 +106,9 @@ def fix(r):
     return f
 
 
-post_exprs = (basic * (call + index + await_ + chain + field_ + propogate).many0()).map(fix)
+post_exprs = (basic * (call + index + await_ + chain + field_ + propogate).many0()).map(
+    fix
+)
 
 pow = right(post_exprs, "**", BinOp)
 
@@ -127,7 +136,9 @@ bitand = left(shift, tag("&"), BinOp)
 bitxor = left(bitand, tag("^"), BinOp)
 bitor = left(bitxor, tag("|"), BinOp)
 
-comparator = tag("in") + "notin" + "isnot" + "is" + "<=" + ">=" + "<" + ">" + "==" + "!="
+comparator = (
+    tag("in") + "notin" + "isnot" + "is" + "<=" + ">=" + "<" + ">" + "==" + "!="
+)
 comparison = bitor.listfix(comparator, Comparison)
 
 and_ = left(comparison, "and", BinOp)
@@ -140,21 +151,38 @@ expr_list.f = expr.sep(ws * "," * ws)
 # Statements
 
 pattern = name
-let = (("let" >> ws >> pattern << ws << "=" << ws) * expr).spanned().map(lambda x: Let(x[1], *x[0]))
-assign = ((pattern << ws << "=" << ws) * expr).spanned().map(lambda x: Assign(x[1], *x[0]))
+let = (
+    (("let" >> ws >> pattern << ws << "=" << ws) * expr)
+    .spanned()
+    .map(lambda x: Let(x[1], *x[0]))
+)
+assign = (
+    ((pattern << ws << "=" << ws) * expr).spanned().map(lambda x: Assign(x[1], *x[0]))
+)
 
 ## use
 path = Parser()
-path_list = ("(" >> ws >> path.sep(ws >> "," << ws) << ws << ")").map(PathListTerminator)
+path_list = ("(" >> ws >> path.sep(ws >> "," << ws) << ws << ")").map(
+    PathListTerminator
+)
 path_as = (name * (ws >> "as" >> ws >> name).opt()).starmap(SimpleTerminator)
 path.f = ((name << ws << ".").many0() * (path_as + path_list)).map(lambda x: Path(*x))
 use = ("use" >> ws >> path).spanned().map(lambda x: Use(x[1], x[0]))
 
-fn_stmt = (seq("fn" >> ws >> name << ws, "(" >> ws >> name.sep(ws * "," * ws) << ws << ")", ws >> expr)
+fn_stmt = (
+    seq(
+        "fn" >> ws >> name << ws,
+        "(" >> ws >> name.sep(ws * "," * ws) << ws << ")",
+        ws >> expr,
+    )
     .spanned()
-    .map(lambda x: FnNamed(x[1], x[0][0], x[0][1], x[0][2])))
+    .map(lambda x: FnNamed(x[1], x[0][0], x[0][1], x[0][2]))
+)
 
-statement = (block + if_stmt + fn_stmt).mark(False) + (let + assign + use + expr).mark(True)
+statement = (block + if_stmt + fn_stmt).mark(False) + (let + assign + use + expr).mark(
+    True
+)
+
 
 def statements_impl(s0):
     s = s0
@@ -168,4 +196,6 @@ def statements_impl(s0):
         if not final_semi and requires_semi and (r := statement(s)) is not None:
             raise ValueError(f"Missing semicolon")
     return Statements(stmts, final_semi), s
+
+
 statements.f = statements_impl

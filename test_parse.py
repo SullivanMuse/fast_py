@@ -274,77 +274,301 @@ def test_pre_exprs():
 
 def test_range_syntax():
     s = "x..y"
-    assert range_syntax(s) == (Range(Span.all(s), Id(Span(s, 0, 1)), Id(Span(s, 3, 4)), "clopen"), Input.end(s)), "Successful parse"
-    
+    assert range_syntax(s) == (
+        Range(Span.all(s), Id(Span(s, 0, 1)), Id(Span(s, 3, 4)), "clopen"),
+        Input.end(s),
+    ), "Successful parse"
+
     s = "x..=y"
-    assert range_syntax(s) == (Range(Span.all(s), Id(Span(s, 0, 1)), Id(Span(s, 4, 5)), "closed"), Input.end(s)), "Successful parse"
+    assert range_syntax(s) == (
+        Range(Span.all(s), Id(Span(s, 0, 1)), Id(Span(s, 4, 5)), "closed"),
+        Input.end(s),
+    ), "Successful parse"
 
 
 def test_pow():
     s = "x**y"
-    assert pow(s) == (BinOp(Span.all(s), "**", Id(Span(s, 0, 1)), Id(Span(s, 3, 4))), Input.end(s)), "Successful parse"
+    assert pow(s) == (
+        BinOp(Span.all(s), "**", Id(Span(s, 0, 1)), Id(Span(s, 3, 4))),
+        Input.end(s),
+    ), "Successful parse"
 
 
 def test_lam():
     s = "fn(x) x"
-    assert fn(s) == (Fn(Span.all(s), [Span(s, 3, 4)], Id(Span(s, len(s) - 1, len(s)))), Input.end(s)), "Successful parse"
+    assert fn(s) == (
+        Fn(Span.all(s), [Span(s, 3, 4)], Id(Span(s, len(s) - 1, len(s)))),
+        Input.end(s),
+    ), "Successful parse"
+
 
 def test_binop():
     for op in ["*", "@", "/", "%", "+", "-", "&", "^", "|"]:
         s = f"x{op}x"
-        assert expr(s) == (BinOp(Span(s, 0, 3), op, Id(Span(s, 0, 1)), Id(Span(s, 2, 3))), Input(s, 3)), "Successful parse"
-    
+        assert expr(s) == (
+            BinOp(Span(s, 0, 3), op, Id(Span(s, 0, 1)), Id(Span(s, 2, 3))),
+            Input(s, 3),
+        ), "Successful parse"
+
     for op in ["//", "/^", "<<", ">>"]:
         s = f"x{op}x"
-        assert expr(s) == (BinOp(Span(s, 0, 4), op, Id(Span(s, 0, 1)), Id(Span(s, 3, 4))), Input(s, 4)), "Successful parse"
+        assert expr(s) == (
+            BinOp(Span(s, 0, 4), op, Id(Span(s, 0, 1)), Id(Span(s, 3, 4))),
+            Input(s, 4),
+        ), "Successful parse"
+
 
 def test_comparison():
     s = "1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11"
-    
-    r = (Comparison(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=0, j=57), ops=['is', 'isnot', 'in', 'notin', '<=', '>=', '<', '>', '==', '!='], inner=[Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=0, j=1)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=5, j=6)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=13, j=14)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=18, j=19)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=26, j=27)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=31, j=32)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=36, j=37)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=40, j=41)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=44, j=45)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=49, j=51)), Integer(span=Span(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=55, j=57))]), Input(s='1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11', i=57))
+
+    r = (
+        Comparison(
+            span=Span(
+                s="1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11", i=0, j=57
+            ),
+            ops=["is", "isnot", "in", "notin", "<=", ">=", "<", ">", "==", "!="],
+            inner=[
+                Integer(
+                    span=Span(
+                        s="1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11",
+                        i=0,
+                        j=1,
+                    )
+                ),
+                Integer(
+                    span=Span(
+                        s="1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11",
+                        i=5,
+                        j=6,
+                    )
+                ),
+                Integer(
+                    span=Span(
+                        s="1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11",
+                        i=13,
+                        j=14,
+                    )
+                ),
+                Integer(
+                    span=Span(
+                        s="1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11",
+                        i=18,
+                        j=19,
+                    )
+                ),
+                Integer(
+                    span=Span(
+                        s="1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11",
+                        i=26,
+                        j=27,
+                    )
+                ),
+                Integer(
+                    span=Span(
+                        s="1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11",
+                        i=31,
+                        j=32,
+                    )
+                ),
+                Integer(
+                    span=Span(
+                        s="1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11",
+                        i=36,
+                        j=37,
+                    )
+                ),
+                Integer(
+                    span=Span(
+                        s="1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11",
+                        i=40,
+                        j=41,
+                    )
+                ),
+                Integer(
+                    span=Span(
+                        s="1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11",
+                        i=44,
+                        j=45,
+                    )
+                ),
+                Integer(
+                    span=Span(
+                        s="1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11",
+                        i=49,
+                        j=51,
+                    )
+                ),
+                Integer(
+                    span=Span(
+                        s="1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11",
+                        i=55,
+                        j=57,
+                    )
+                ),
+            ],
+        ),
+        Input(s="1 is 2 isnot 3 in 4 notin 5 <= 6 >= 7 < 8 > 9 == 10 != 11", i=57),
+    )
     assert comparison(s) == r, "Successful parse"
+
 
 def test_boolean():
     s = "a and b or c and d"
-    r = (BinOp(span=Span(s='a and b or c and d', i=0, j=18), op='or', left=BinOp(span=Span(s='a and b or c and d', i=0, j=7), op='and', left=Id(span=Span(s='a and b or c and d', i=0, j=1)), right=Id(span=Span(s='a and b or c and d', i=6, j=7))), right=BinOp(span=Span(s='a and b or c and d', i=11, j=18), op='and', left=Id(span=Span(s='a and b or c and d', i=11, j=12)), right=Id(span=Span(s='a and b or c and d', i=17, j=18)))), Input(s='a and b or c and d', i=18))
+    r = (
+        BinOp(
+            span=Span(s="a and b or c and d", i=0, j=18),
+            op="or",
+            left=BinOp(
+                span=Span(s="a and b or c and d", i=0, j=7),
+                op="and",
+                left=Id(span=Span(s="a and b or c and d", i=0, j=1)),
+                right=Id(span=Span(s="a and b or c and d", i=6, j=7)),
+            ),
+            right=BinOp(
+                span=Span(s="a and b or c and d", i=11, j=18),
+                op="and",
+                left=Id(span=Span(s="a and b or c and d", i=11, j=12)),
+                right=Id(span=Span(s="a and b or c and d", i=17, j=18)),
+            ),
+        ),
+        Input(s="a and b or c and d", i=18),
+    )
     assert expr(s) == r, "Successful parse"
 
 
 def test_statements():
     s = "x;y; {} x"
-    r = (Statements(statements=[Id(span=Span(s='x;y; {} x', i=0, j=1)), Id(span=Span(s='x;y; {} x', i=2, j=3)), Statements(statements=[], final_semicolon=False), Id(span=Span(s='x;y; {} x', i=8, j=9))], final_semicolon=False), Input(s='x;y; {} x', i=9))
+    r = (
+        Statements(
+            statements=[
+                Id(span=Span(s="x;y; {} x", i=0, j=1)),
+                Id(span=Span(s="x;y; {} x", i=2, j=3)),
+                Statements(statements=[], final_semicolon=False),
+                Id(span=Span(s="x;y; {} x", i=8, j=9)),
+            ],
+            final_semicolon=False,
+        ),
+        Input(s="x;y; {} x", i=9),
+    )
     assert statements(s) == r, "Successful parse"
 
 
 def test_if():
     s = "if x { y } else if 5 { z }"
-    r = (If(span=Span(s='if x { y } else if 5 { z }', i=0, j=26), predicate=Id(span=Span(s='if x { y } else if 5 { z }', i=3, j=4)), consequence=Statements(statements=[Id(span=Span(s='if x { y } else if 5 { z }', i=7, j=8))], final_semicolon=False), alternative=If(span=Span(s='if x { y } else if 5 { z }', i=16, j=26), predicate=Integer(span=Span(s='if x { y } else if 5 { z }', i=19, j=20)), consequence=Statements(statements=[Id(span=Span(s='if x { y } else if 5 { z }', i=23, j=24))], final_semicolon=False), alternative=None)), Input(s='if x { y } else if 5 { z }', i=26))
+    r = (
+        If(
+            span=Span(s="if x { y } else if 5 { z }", i=0, j=26),
+            predicate=Id(span=Span(s="if x { y } else if 5 { z }", i=3, j=4)),
+            consequence=Statements(
+                statements=[Id(span=Span(s="if x { y } else if 5 { z }", i=7, j=8))],
+                final_semicolon=False,
+            ),
+            alternative=If(
+                span=Span(s="if x { y } else if 5 { z }", i=16, j=26),
+                predicate=Integer(
+                    span=Span(s="if x { y } else if 5 { z }", i=19, j=20)
+                ),
+                consequence=Statements(
+                    statements=[
+                        Id(span=Span(s="if x { y } else if 5 { z }", i=23, j=24))
+                    ],
+                    final_semicolon=False,
+                ),
+                alternative=None,
+            ),
+        ),
+        Input(s="if x { y } else if 5 { z }", i=26),
+    )
     assert if_stmt(s) == r, "Successful parse"
 
 
 def test_let():
     s = "let x = 5"
-    r = (Let(span=Span(s='let x = 5', i=0, j=9), pattern=Span(s='let x = 5', i=4, j=5), inner=Integer(span=Span(s='let x = 5', i=8, j=9))), Input(s='let x = 5', i=9))
+    r = (
+        Let(
+            span=Span(s="let x = 5", i=0, j=9),
+            pattern=Span(s="let x = 5", i=4, j=5),
+            inner=Integer(span=Span(s="let x = 5", i=8, j=9)),
+        ),
+        Input(s="let x = 5", i=9),
+    )
     assert let(s) == r, "Successful parse"
 
 
 def test_assign():
     s = "x = 5"
-    r = (Assign(span=Span(s='x = 5', i=0, j=5), pattern=Span(s='x = 5', i=0, j=1), expression=Integer(span=Span(s='x = 5', i=4, j=5))), Input(s='x = 5', i=5))
+    r = (
+        Assign(
+            span=Span(s="x = 5", i=0, j=5),
+            pattern=Span(s="x = 5", i=0, j=1),
+            expression=Integer(span=Span(s="x = 5", i=4, j=5)),
+        ),
+        Input(s="x = 5", i=5),
+    )
     assert assign(s) == r, "Successful parse"
 
 
 def test_use():
     s = "use x.(y, z as w, )"
-    r = (Use(span=Span(s='use x.(y, z as w, )', i=0, j=19), path=Path(parents=[Span(s='use x.(y, z as w, )', i=4, j=5)], terminator=PathListTerminator(paths=[Path(parents=[], terminator=SimpleTerminator(name=Span(s='use x.(y, z as w, )', i=7, j=8), rename=None)), Path(parents=[], terminator=SimpleTerminator(name=Span(s='use x.(y, z as w, )', i=10, j=11), rename=Span(s='use x.(y, z as w, )', i=15, j=16)))]))), Input(s='use x.(y, z as w, )', i=19))
+    r = (
+        Use(
+            span=Span(s="use x.(y, z as w, )", i=0, j=19),
+            path=Path(
+                parents=[Span(s="use x.(y, z as w, )", i=4, j=5)],
+                terminator=PathListTerminator(
+                    paths=[
+                        Path(
+                            parents=[],
+                            terminator=SimpleTerminator(
+                                name=Span(s="use x.(y, z as w, )", i=7, j=8),
+                                rename=None,
+                            ),
+                        ),
+                        Path(
+                            parents=[],
+                            terminator=SimpleTerminator(
+                                name=Span(s="use x.(y, z as w, )", i=10, j=11),
+                                rename=Span(s="use x.(y, z as w, )", i=15, j=16),
+                            ),
+                        ),
+                    ]
+                ),
+            ),
+        ),
+        Input(s="use x.(y, z as w, )", i=19),
+    )
     assert use(s) == r, "Successful parse"
 
 
 def test_fn_name():
     s = "fn name(a, b, c) e"
-    r = (FnNamed(span=Span(s='fn name(a, b, c) e', i=0, j=18), name=Span(s='fn name(a, b, c) e', i=3, j=7), args=[Span(s='fn name(a, b, c) e', i=8, j=9), Span(s='fn name(a, b, c) e', i=11, j=12), Span(s='fn name(a, b, c) e', i=14, j=15)], expr=Id(span=Span(s='fn name(a, b, c) e', i=17, j=18))), Input(s='fn name(a, b, c) e', i=18))
+    r = (
+        FnNamed(
+            span=Span(s="fn name(a, b, c) e", i=0, j=18),
+            name=Span(s="fn name(a, b, c) e", i=3, j=7),
+            args=[
+                Span(s="fn name(a, b, c) e", i=8, j=9),
+                Span(s="fn name(a, b, c) e", i=11, j=12),
+                Span(s="fn name(a, b, c) e", i=14, j=15),
+            ],
+            expr=Id(span=Span(s="fn name(a, b, c) e", i=17, j=18)),
+        ),
+        Input(s="fn name(a, b, c) e", i=18),
+    )
     assert fn_stmt(s) == r, "Successful parse"
 
     s = "fn name( a , b , c , ) a"
-    r = (FnNamed(span=Span(s='fn name( a , b , c , ) a', i=0, j=24), name=Span(s='fn name( a , b , c , ) a', i=3, j=7), args=[Span(s='fn name( a , b , c , ) a', i=9, j=10), Span(s='fn name( a , b , c , ) a', i=13, j=14), Span(s='fn name( a , b , c , ) a', i=17, j=18)], expr=Id(span=Span(s='fn name( a , b , c , ) a', i=23, j=24))), Input(s='fn name( a , b , c , ) a', i=24))
+    r = (
+        FnNamed(
+            span=Span(s="fn name( a , b , c , ) a", i=0, j=24),
+            name=Span(s="fn name( a , b , c , ) a", i=3, j=7),
+            args=[
+                Span(s="fn name( a , b , c , ) a", i=9, j=10),
+                Span(s="fn name( a , b , c , ) a", i=13, j=14),
+                Span(s="fn name( a , b , c , ) a", i=17, j=18),
+            ],
+            expr=Id(span=Span(s="fn name( a , b , c , ) a", i=23, j=24)),
+        ),
+        Input(s="fn name( a , b , c , ) a", i=24),
+    )
     assert fn_stmt(s) == r, "Successful parse"

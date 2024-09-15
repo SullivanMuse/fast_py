@@ -226,6 +226,7 @@ class Statements:
     statements: list[Statement]
     final_semicolon: bool
 
+
 @dataclass
 class Let(Statement):
     pattern: Span
