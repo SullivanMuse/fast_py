@@ -429,14 +429,14 @@ class Parser:
         """
         >>> p = tag('x').negate()
         >>> p('x')
-        False
         >>> p('y')
         (None, Input(s='y', i=0))
         """
 
         @Parser
         def parse(s):
-            return (not self(s)) and (None, s)
+            if (r := self(s)) is None:
+                return None, s
 
         return parse
 

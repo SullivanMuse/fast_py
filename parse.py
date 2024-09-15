@@ -24,7 +24,25 @@ floating = (
 )
 
 ## id
-name = (alpha * ("_" + alnum).many0()).span()
+keywords = (tag("if") +
+            "else" + 
+            
+            "use" +
+            "fn" +
+            "await" +
+            "chain" +
+            
+            "loop" +
+            "while" +
+            "for" +
+            "repeat" +
+            "break" +
+            "continue" +
+            "return" +
+            
+            "and" + "or" +
+            "in" + "notin" + "isnot" + "is")
+name = (keywords.negate() * alpha * ("_" + alnum).many0()).span()
 id = name.map(Id)
 
 ## string
