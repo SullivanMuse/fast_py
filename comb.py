@@ -228,6 +228,31 @@ def test_alt():
     assert p("") == Error(State(Span(""))), "Error"
 
 
+def succeed(val=None):
+    @Parser
+    def parse(s):
+        return Success(s, val)
+    return parse
+
+
+def test_succeed():
+    s = "Hello"
+    val = 123
+    p = succeed(val)
+    assert p(s) == Success(State(Span(s)), val), "Success"
+
+
+def opt(p):
+    return alt(p, succeed())
+
+
+def test_opt():
+    s = "Hello"
+    p = opt("H")
+    assert p(s) == Success(State(Span(s, 1, 5)), Span(s, 0, 1)), "Success"
+    assert p("") == Success(State(Span("")), None), "Success"
+
+
 # @dataclass
 # class Parser:
 #     f: Any = None
