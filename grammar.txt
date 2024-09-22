@@ -11,15 +11,21 @@ basic
 Introduced expressions
     fn(x) { e }
     block = '{' statement[;] '}'
-    if = 'if' expr block ['else' (if | block)]
-    *return = 'return' expr?
-    *break = 'break'
-    *continue = 'continue'
-    *for = 'for' expr 'in' expr block
-    *while = 'while' expr block
-    *loop = 'loop' block
+    return = 'return' expr?
+    break = 'break'
+    continue = 'continue'
+    loop = 'loop' block
 
-left    x(y) x[y] x.y
+gather = '..' name?
+item-pattern = pattern | gather
+range-pattern = pattern? ('..' | '..=') pattern?
+array-pattern = '[' item-pattern ']'
+id-pattern = name
+tag-pattern = ':' name
+pattern = '_' | id-pattern '@' pattern | array-pattern | range-pattern | integer-pattern | float-pattern | tag-pattern | '{' expr '}'
+
+left    x(y) x[y]
+post    x.y
 post    .await .chain ?
 right   **
 pre     ! ~ - : ...
