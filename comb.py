@@ -114,7 +114,6 @@ def tag(m):
         if s1.str() == m:
             return Success(s2, s1)
         return Error(s)
-
     return parse
 
 
@@ -139,8 +138,43 @@ def test_one():
     s = "Hello"
     p = one
     assert p(s) == Success(State(Span(s, 1, 5)), Span(s, 0, 1)), "Success"
-    
-    assert p("") == Error(State(Span(""))), "Success"
+    assert p("") == Error(State(Span(""))), "Error"
+
+
+def validate(p, f):
+    @Parser
+    def parse(s):
+        r = p(s)
+        if r:
+            if f(r.val):
+                return r
+            return Error(s)
+        return r
+    return parse
+
+
+def test_validate():
+    s = "Hello"
+    p = validate(one, lambda s: s.str().isupper())
+    assert p(s) == Success(State(Span(s, 1, 5)), Span(s, 0, 1)), "Success"
+    assert p("") == Error(State(Span(""))), "Error"
+
+
+def named(k, p):
+    @Parser
+    def parse(s):
+        r = p(s)
+        if r:
+            r.state.named[k] = r.val
+        return r
+    return parse
+
+
+def test_named():
+    s = "Hello"
+    p = named("key", one)
+    assert p(s) == Success(State(Span(s, 1, 5), {'key': Span(s, 0, 1)}), Span(s, 0, 1)), "Success"
+    assert p("") == Error(State(Span(""))), "Error"
 
 
 # @dataclass
