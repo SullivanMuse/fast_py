@@ -399,3 +399,21 @@ def test_left():
         ),
     ), "Success"
     assert p("") == Error(Span("")), "Error"
+
+
+def pre(inner, op, cls=lambda span, op, inner: (span, op, inner)):
+    return Parser.recursive(lambda p: alt(starmap(seq(op, p), cls), inner))
+
+
+def test_pre():
+    s = "++x"
+    p = pre("x", "+")
+    assert p(s) == Success(
+        Span(s, 3, 3),
+        val=(
+            Span(s, 0, 3),
+            Span(s, 0, 1),
+            (Span(s, 1, 3), Span(s, 1, 2), Span(s, 2, 3)),
+        ),
+    ), "Success"
+    assert p("") == Error(Span("")), "Error"
