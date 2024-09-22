@@ -365,3 +365,37 @@ def test_right():
         (Span(s, 0, 5), Span(s, 0, 1), (Span(s, 2, 5), Span(s, 2, 3), Span(s, 4, 5))),
     ), "Success"
     assert p("") == Error(Span("")), "Error"
+
+
+def left(inner, op, cls=lambda span, left, right, op: (span, left, right, op)):
+    inner = Parser.ensure(inner)
+    op = Parser.ensure(op)
+    tail = seq(ignore(ws), op, ignore(ws), inner)
+
+    @Parser
+    def parse(s):
+        if r := inner(s):
+            left = r.val
+            while r := tail(r.span):
+                op, right = r.val
+                span = s.span(r.span)
+                left = cls(span, left, right, op)
+            return Success(r.span, left)
+        return Error(s)
+
+    return parse
+
+
+def test_left():
+    s = "x+x+x"
+    p = left("x", "+")
+    assert p(s) == Success(
+        Span(s, len(s), len(s)),
+        (
+            Span(s, 0, 5),
+            (Span(s, 0, 5), Span(s, 0, 1), Span(s, 2, 3), Span(s, 1, 2)),
+            Span(s, 4, 5),
+            Span(s, 3, 4),
+        ),
+    ), "Success"
+    assert p("") == Error(Span("")), "Error"
