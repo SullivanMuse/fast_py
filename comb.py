@@ -177,6 +177,29 @@ def test_named():
     assert p("") == Error(State(Span(""))), "Error"
 
 
+def seq(*ps):
+    @Parser
+    def parse(s0):
+        s = s0
+        vals = []
+        for p in ps:
+            r = p(s)
+            if r:
+                vals.append(r.val)
+                s = r.state
+            else:
+                return Error(s)
+        return Success(s, vals)
+    return parse
+
+
+def test_seq():
+    s = "Hello"
+    p = seq(tag("H"), named("e", tag("e")))
+    assert p(s) == Success(State(Span(s, 2, 5), {'e': Span(s, 1, 2)}), [Span(s, 0, 1), Span(s, 1, 2)]), "Success"
+    assert p("") == Error(State(Span(""))), "Error"
+
+
 # @dataclass
 # class Parser:
 #     f: Any = None
