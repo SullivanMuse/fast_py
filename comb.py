@@ -97,6 +97,12 @@ class Fail(Result):
 class Parser:
     f: Optional[Callable[[State], Result]] = None
 
+    @classmethod
+    def ensure(cls, p):
+        if isinstance(p, str):
+            p = tag(p)
+        return p
+
     def __call__(self, s: str | Span):
         if isinstance(s, str):
             s = Span(s)
@@ -142,6 +148,7 @@ def test_one():
 
 
 def validate(p, f):
+    p = Parser.ensure(p)
     @Parser
     def parse(s):
         r = p(s)
@@ -155,12 +162,13 @@ def validate(p, f):
 
 def test_validate():
     s = "Hello"
-    p = validate(one, lambda s: s.str().isupper())
+    p = validate("H", lambda s: s.str().isupper())
     assert p(s) == Success(State(Span(s, 1, 5)), Span(s, 0, 1)), "Success"
     assert p("") == Error(State(Span(""))), "Error"
 
 
 def named(k, p):
+    p = Parser.ensure(p)
     @Parser
     def parse(s):
         r = p(s)
@@ -178,6 +186,7 @@ def test_named():
 
 
 def seq(*ps):
+    ps = [Parser.ensure(p) for p in ps]
     @Parser
     def parse(s0):
         s = s0
@@ -195,8 +204,27 @@ def seq(*ps):
 
 def test_seq():
     s = "Hello"
-    p = seq(tag("H"), named("e", tag("e")))
+    p = seq("H", named("e", "e"))
     assert p(s) == Success(State(Span(s, 2, 5), {'e': Span(s, 1, 2)}), [Span(s, 0, 1), Span(s, 1, 2)]), "Success"
+    assert p("") == Error(State(Span(""))), "Error"
+
+
+def alt(*ps):
+    ps = [Parser.ensure(p) for p in ps]
+    @Parser
+    def parse(s):
+        for p in ps:
+            r = p(s)
+            if r:
+                return r
+        return Error(s)
+    return parse
+
+
+def test_alt():
+    s = "Hello"
+    p = alt("e", "H")
+    assert p(s) == Success(State(Span(s, 1, 5)), Span(s, 0, 1)), "Success"
     assert p("") == Error(State(Span(""))), "Error"
 
 
