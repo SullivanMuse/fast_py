@@ -17,6 +17,12 @@ class Span:
     def _range(self):
         return range(*self._slice().indices(len(self.string)))
 
+    def __len__(self):
+        return len(self._range())
+
+    def __bool__(self):
+        return len(self) != 0
+
     def span(self, other):
         assert self.string is other.string, "Strings must be identical"
         r1 = self._range()
@@ -58,7 +64,7 @@ class State:
 
     def split(self, n=1):
         span1, span2 = self.span.split(n)
-        return span1, State(span2, self.named)
+        return span1, State(span2, self.named.copy())
 
 
 @dataclass
@@ -94,7 +100,9 @@ class Parser:
     def __call__(self, s: str | Span):
         if isinstance(s, str):
             s = Span(s)
-        if not isinstance(s, Span):
+        if isinstance(s, Span):
+            s = State(s)
+        if not isinstance(s, State):
             raise TypeError
         return self.f(s)
 
@@ -104,8 +112,8 @@ def tag(m):
     def parse(s):
         s1, s2 = s.split(len(m))
         if s1.str() == m:
-            return Success(State(s2), s1)
-        return Error(State(s))
+            return Success(s2, s1)
+        return Error(s)
 
     return parse
 
@@ -117,6 +125,22 @@ def test_tag():
     
     p = tag("other")
     assert p(s) == Error(State(Span(s))), "Error"
+
+
+@Parser
+def one(s):
+    s1, s2 = s.split()
+    if s1:
+        return Success(s2, s1)
+    return Error(s)
+
+
+def test_one():
+    s = "Hello"
+    p = one
+    assert p(s) == Success(State(Span(s, 1, 5)), Span(s, 0, 1)), "Success"
+    
+    assert p("") == Error(State(Span(""))), "Success"
 
 
 # @dataclass
