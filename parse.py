@@ -55,16 +55,36 @@ def test_id():
 
 
 ## string
-char_item = pred(one, lambda s: s.str() not in "\\\"{}")
-string = map(seq('"', many0(char_item), '"'), lambda span, _: Node(span, Expr.String))
+escape = seq("\\", alt("\\", "\"", "{", "}"))
+forbidden = set(r'\"{}')
+regular = pred(one, lambda s: s.str() not in forbidden)
+interpolant = map(seq(ignore("{"), expr, ignore("}")), lambda _, item: item)
+piece = map(many0(alt(regular, escape)), lambda span, _: span)
+string_impl = seq(ignore('"'), many0(piece, interpolant), piece, ignore('"'))
+string = starmap(string_impl, lambda span, pis, piece: Node(span, Expr.String, children=[i for _, i in pis], tokens=[*(p for p, _ in pis), piece]))
 
 
 def test_string():
-    s = '"Hello"'
-    assert string(s) == Success(Span(s, len(s), len(s)), Node(Span(s, 0, len(s)), Expr.String)), "Success"
+    s = '"asdf\\""'
+    assert len(s) == 8
+    assert string(s) == Success(Span(s, len(s), len(s)), Node(Span(s, 0, len(s)), Expr.String, children=[], tokens=[Span(s, 1, 7)]))
     
-    s = "123"
-    assert string(s) == Error(Span(s, 0, None)), "Error"
+    s = '"asdf\\"'
+    assert len(s) == 7
+    assert string(s) == Error(Span(s)), "Accidentally escaped delimiter"
+
+
+basic.f = alt(integer, floating, id, string)
+
+expr.f = basic.f
+
+
+# def test_string():
+#     s = '"Hello"'
+#     assert string(s) == Success(Span(s, len(s), len(s)), Node(Span(s, 0, len(s)), Expr.String)), "Success"
+    
+#     s = "123"
+#     assert string(s) == Error(Span(s, 0, None)), "Error"
 
 
 # ## string
