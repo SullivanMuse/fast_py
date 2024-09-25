@@ -54,7 +54,20 @@ def test_id():
     assert id(s) == Error(Span(s, 0, None)), "Error"
 
 
-# # ## string
+## string
+char_item = pred(one, lambda s: s.str() not in "\\\"{}")
+string = map(seq('"', many0(char_item), '"'), lambda span, _: Node(span, Expr.String))
+
+
+def test_string():
+    s = '"Hello"'
+    assert string(s) == Success(Span(s, len(s), len(s)), Node(Span(s, 0, len(s)), Expr.String)), "Success"
+    
+    s = "123"
+    assert string(s) == Error(Span(s, 0, None)), "Error"
+
+
+# ## string
 # piece = (pred(lambda c: c not in '\\"{}') + "\\\\" + '\\"' + "\\{" + "\\}").many0().span()
 # # interpolant = "{" >> ws >> id << ws << "}"
 # # def fix_string_items(x):
