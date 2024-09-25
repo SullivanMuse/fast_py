@@ -9,81 +9,87 @@ statements = Parser()
 basic = Parser()
 
 ## integer
-dec_digits = digit.many1()
-dec_run = (dec_digits * ("_" * dec_digits).many0()).span()
-integer = dec_run.map(lambda span: Node(span, Expr.Int))
+dec_digits = many1(digit)
+dec_run = map(seq(dec_digits, many0("_", dec_digits)), lambda span, _: span)
+integer = map(dec_run, lambda span, _: Node(span, Expr.Int))
 
-## float
-fraction = ("." * dec_run).span()
-exponent = ("e" * tag("-").opt() * dec_run).span()
-floating = (
-    seq(dec_run, fraction.opt(), exponent.opt())
-    .pred(lambda x: not (x[2] is None and x[3] is None))
-    .span()
-    .map(lambda span: Node(span, Expr.Float))
-)
 
-# ## id
-keywords = (
-    tag("if")
-    + "else"
-    + "use"
-    + "fn"
-    + "await"
-    + "chain"
-    + "loop"
-    + "while"
-    + "for"
-    + "repeat"
-    + "break"
-    + "continue"
-    + "return"
-    + "and"
-    + "or"
-    + "in"
-    + "notin"
-    + "isnot"
-    + "is"
-)
-name = (keywords.negate() * alpha * ("_" + alnum).many0()).span()
-id = name.map(lambda span: Node(span, Expr.Id))
+def test_integer():
+    s = "1234"
+    node = Node(Span(s, 0, len(s)), Expr.Int)
+    assert integer(s) == Success(Span(s, len(s), len(s)), node), "Success"
+    
+    s = ""
+    assert integer(s) == Error(Span(s, 0, None)), "Error"
 
-# ## string
-piece = (pred(lambda c: c not in '\\"{}') + "\\\\" + '\\"' + "\\{" + "\\}").many0().span()
-# interpolant = "{" >> ws >> id << ws << "}"
-# def fix_string_items(x):
-#     first, *rest = x
-#     tokens = [first]
-#     interpolants = []
-#     for (interpolant, piece) in rest:
-#         tokens.append(piece)
-#         interpolants.append(interpolant)
-#     return tokens, interpolants
-# string_items = (piece * (interpolant * piece).many0()).map(fix_string_items).opt()
-string = (
-    (id.opt() * ('"' >> piece << '"'))
-    .spanned()
-    .map(lambda x: Node(x[1], Expr.String, tokens=[x[0][1]]))
-)
 
-## array
-array = seq(tag("[") << ws, id.sep(ws >> "," << ws), ws >> "]").map(lambda x: Node(x[0], Expr.Array, children=x[2], tokens=[x[1], x[3]]))
+# ## float
+fraction = map(seq(".", dec_run), lambda span, _: span)
+exponent = map(seq("e", opt("-"), dec_run), lambda span, _: span)
+s = seq(dec_run, opt(fraction), opt(exponent))
+floating = map(pred(s, lambda x: not (x[1] is None or x[2] is None)), lambda span, _: Node(span, Expr.Float))
 
-## paren
-paren = surround(expr, "(", ")", lambda span, **kwargs: Node(span, Expr.Paren, **kwargs))
 
-# ## Function literal
-fn = (
-    ((tag("fn") >> ws >> "(" >> (ws >> name).sep(ws * ",") << ws << ")") * (ws >> expr))
-    .spanned()
-    .map(lambda x: Node(x[1], Expr.Fn, children=[x[0][1]], tokens=x[0][0]))
-)
+def test_float():
+    s = "123.456e789"
+    node = Node(Span(s, 0, len(s)), Expr.Float)
+    assert floating(s) == Success(Span(s, len(s), len(s)), node), "Success"
+    
+    s = "123"
+    assert floating(s) == Error(Span(s, 0, None)), "Error"
 
-block = seq("{" << ws, id.many0(), ws >> "}").map(lambda x: Node(x[0], Expr.Block, children=x[2], tokens=[x[1], x[3]]))
 
-# TODO: match
+## id
+keywords = alt("if", "else", "use", "fn", "await", "chain", "loop", "while", "for", "repeat", "break", "continue", "return", "and", "or", "in", "notin", "isnot", "is")
+name = seq(neg(keywords), many1(alpha), many0("_", many1(alnum)))
+id = map(name, lambda span, _: Node(span, Expr.Id))
 
-basic.f = integer + floating + id + string + array + paren + fn + block
+
+def test_id():
+    s = "asdf"
+    node = Node(Span(s, 0, len(s)), Expr.Id)
+    assert id(s) == Success(Span(s, len(s), len(s)), node), "Success"
+    
+    s = "123"
+    assert id(s) == Error(Span(s, 0, None)), "Error"
+
+
+# # ## string
+# piece = (pred(lambda c: c not in '\\"{}') + "\\\\" + '\\"' + "\\{" + "\\}").many0().span()
+# # interpolant = "{" >> ws >> id << ws << "}"
+# # def fix_string_items(x):
+# #     first, *rest = x
+# #     tokens = [first]
+# #     interpolants = []
+# #     for (interpolant, piece) in rest:
+# #         tokens.append(piece)
+# #         interpolants.append(interpolant)
+# #     return tokens, interpolants
+# # string_items = (piece * (interpolant * piece).many0()).map(fix_string_items).opt()
+# string = (
+#     (id.opt() * ('"' >> piece << '"'))
+#     .spanned()
+#     .map(lambda x: Node(x[1], Expr.String, tokens=[x[0][1]]))
+# )
+
+# ## array
+# array = seq(tag("[") << ws, id.sep(ws >> "," << ws), ws >> "]").map(lambda x: Node(x[0], Expr.Array, children=x[2], tokens=[x[1], x[3]]))
+
+# ## paren
+# paren = surround(expr, "(", ")", lambda span, **kwargs: Node(span, Expr.Paren, **kwargs))
+
+# # ## Function literal
+# fn = (
+#     ((tag("fn") >> ws >> "(" >> (ws >> name).sep(ws * ",") << ws << ")") * (ws >> expr))
+#     .spanned()
+#     .map(lambda x: Node(x[1], Expr.Fn, children=[x[0][1]], tokens=x[0][0]))
+# )
+
+# block = seq("{" << ws, id.many0(), ws >> "}").map(lambda x: Node(x[0], Expr.Block, children=x[2], tokens=[x[1], x[3]]))
+
+# # TODO: match
+
+# basic.f = integer + floating + id + string + array + paren + fn + block
 
 # operators
 

@@ -146,7 +146,7 @@ def test_one():
     assert p("") == Error(Span("")), "Error"
 
 
-def validate(p, f):
+def pred(p, f):
     p = Parser.ensure(p)
 
     @Parser
@@ -161,9 +161,9 @@ def validate(p, f):
     return parse
 
 
-def test_validate():
+def test_pred():
     s = "Hello"
-    p = validate("H", lambda s: s.str().isupper())
+    p = pred("H", lambda s: s.str().isupper())
     assert p(s) == Success(Span(s, 1, 5), Span(s, 0, 1)), "Success"
     assert p("") == Error(Span("")), "Error"
 
@@ -336,7 +336,7 @@ def test_map():
     assert p("") == Error(Span("")), "Error"
 
 
-space = validate(one, lambda s: s.str().isspace())
+space = pred(one, lambda s: s.str().isspace())
 ws = many0(space)
 
 
@@ -417,3 +417,24 @@ def test_pre():
         ),
     ), "Success"
     assert p("") == Error(Span("")), "Error"
+
+
+def neg(*ps):
+    p = seq(*ps)
+
+    @Parser
+    def parse(s):
+        return Error(s) if p(s) else Success(s, None)
+
+    return ignore(parse)
+
+
+def test_neg():
+    s = "y"
+    p = neg("x")
+    assert p(s) == Success(Span(s), None), "Success"
+
+
+alpha = pred(one, lambda s: s.str().isalpha())
+alnum = pred(one, lambda s: s.str().isalpha())
+digit = pred(one, lambda s: s.str().isdigit())
