@@ -437,6 +437,31 @@ def test_neg():
     assert p(s) == Success(Span(s), None), "Success"
 
 
+def sep(inner, sep):
+    inner = Parser.ensure(inner)
+    sep = Parser.ensure(sep)
+    sep = map(seq(ignore(ws), sep, ignore(ws)), lambda _, sep: sep)
+    @Parser
+    def parse(s0):
+        s = s0
+        vals = []
+        while r := inner(s):
+            vals.append(r.val)
+            s = r.span
+            if r := sep(s):
+                s = r.span
+            else:
+                break
+        return Success(s, vals)
+    return parse
+
+
+def test_sep():
+    p = sep("x", ",")
+    s = "x,x,x"
+    assert p(s) == Success(Span(s, len(s), len(s)), [Span(s, 0, 1), Span(s, 2, 3), Span(s, 4, 5)])
+
+
 alpha = pred(one, lambda s: s.str().isalpha())
 alnum = pred(one, lambda s: s.str().isalpha())
 digit = pred(one, lambda s: s.str().isdigit())

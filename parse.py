@@ -3,7 +3,7 @@ from expr import *
 from pprint import pprint
 
 expr = Parser()
-expr_list = Parser()
+expr_list = sep(expr, ",")
 statements = Parser()
 
 # atom
@@ -73,6 +73,15 @@ def test_string():
     s = '"asdf\\"'
     assert len(s) == 7
     assert string(s) == Error(Span(s)), "Accidentally escaped delimiter"
+
+
+## array
+array = starmap(seq("[", ignore(ws), expr_list, ignore(ws), "]"), lambda span, lsq, exprs, rsq: Node(span, Expr.Array, children=exprs, tokens=[lsq, rsq]))
+
+
+def test_array():
+    s = "[x, y, z]"
+    assert array(s) == Success(Span(s, len(s), len(s)), Node(Span(s, 0, len(s)), Expr.Array, children=[Node(Span(s, 1, 2), Expr.Id), Node(Span(s, 4, 5), Expr.Id), Node(Span(s, 7, 8), Expr.Id)], tokens=[Span(s, 0, 1), Span(s, len(s)-1, len(s))]))
 
 
 atom.f = alt(integer, floating, string, id)
