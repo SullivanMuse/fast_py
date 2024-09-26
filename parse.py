@@ -77,3 +77,15 @@ def test_string():
 
 atom.f = alt(integer, floating, string, id)
 expr.f = atom
+
+# patterns
+integer_pattern = map(dec_run, lambda span, _: Node(span, Pattern.Int))
+
+
+def test_integer_pattern():
+    s = "1234"
+    node = Node(Span(s, 0, len(s)), Pattern.Int)
+    assert integer_pattern(s) == Success(Span(s, len(s), len(s)), node), "Success"
+
+    s = ""
+    assert integer_pattern(s) == Error(Span(s, 0, None)), "Error"
