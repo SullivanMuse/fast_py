@@ -84,7 +84,7 @@ def test_array():
     assert array(s) == Success(Span(s, len(s), len(s)), Node(Span(s, 0, len(s)), Expr.Array, children=[Node(Span(s, 1, 2), Expr.Id), Node(Span(s, 4, 5), Expr.Id), Node(Span(s, 7, 8), Expr.Id)], tokens=[Span(s, 0, 1), Span(s, len(s)-1, len(s))]))
 
 
-atom.f = alt(integer, floating, string, id)
+atom.f = alt(integer, floating, string, id, array)
 expr.f = atom
 
 # patterns
