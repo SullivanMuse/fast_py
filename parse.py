@@ -84,7 +84,16 @@ def test_array():
     assert array(s) == Success(Span(s, len(s), len(s)), Node(Span(s, 0, len(s)), Expr.Array, children=[Node(Span(s, 1, 2), Expr.Id), Node(Span(s, 4, 5), Expr.Id), Node(Span(s, 7, 8), Expr.Id)], tokens=[Span(s, 0, 1), Span(s, len(s)-1, len(s))]))
 
 
-atom.f = alt(integer, floating, string, id, array)
+## paren
+paren = starmap(seq("(", expr, ")"), lambda span, lpar, expr, rpar: Node(span, Expr.Paren, children=[expr], tokens=[lpar, rpar]))
+
+
+def test_paren():
+    s = "(x)"
+    assert paren(s) == Success(Span(s, len(s), len(s)), Node(Span(s, 0, len(s)), Expr.Paren, children=[Node(Span(s, 1, 2), Expr.Id)], tokens=[Span(s, 0, 1), Span(s, 2, 3)]))
+
+
+atom.f = alt(integer, floating, string, id, array, paren)
 expr.f = atom
 
 # patterns
