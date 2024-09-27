@@ -242,12 +242,91 @@ def array_pattern_items(s0):
     return Success(s, (items, tokens))
 
 
-array_pattern = starmap(seq("[", ignore(ws), array_pattern_items, ignore(ws), "]"), lambda span, lsq, items, rsq: Node(span, Pattern.Array, children=items[0], tokens=[lsq, *items[1], rsq]))
+array_pattern = starmap(
+    seq("[", ignore(ws), array_pattern_items, ignore(ws), "]"),
+    lambda span, lsq, items, rsq: Node(
+        span, Pattern.Array, children=items[0], tokens=[lsq, *items[1], rsq]
+    ),
+)
 
 
 def test_array_pattern():
     s = "[1, 2, ...r, 4]"
-    assert array_pattern(s) == Success(Span(s, len(s), len(s)), Node(Span(s, 0, len(s)), Pattern.Array, children=[Node(Span(s, 1, 2), Pattern.Int), Node(Span(s, 4, 5), Pattern.Int), Node(Span(s, 7, 11), Pattern.Gather, children=[Node(Span(s, 10, 11), Pattern.Id)], tokens=[Span(s, 7, 10)]), Node(Span(s, 13, 14), Pattern.Int)], tokens=[Span(s, 0, 1), Span(s, 2, 3), Span(s, 5, 6), Span(s, 11, 12), Span(s, 14, 15)]))
+    assert array_pattern(s) == Success(
+        Span(s, len(s), len(s)),
+        Node(
+            Span(s, 0, len(s)),
+            Pattern.Array,
+            children=[
+                Node(Span(s, 1, 2), Pattern.Int),
+                Node(Span(s, 4, 5), Pattern.Int),
+                Node(
+                    Span(s, 7, 11),
+                    Pattern.Gather,
+                    children=[Node(Span(s, 10, 11), Pattern.Id)],
+                    tokens=[Span(s, 7, 10)],
+                ),
+                Node(Span(s, 13, 14), Pattern.Int),
+            ],
+            tokens=[
+                Span(s, 0, 1),
+                Span(s, 2, 3),
+                Span(s, 5, 6),
+                Span(s, 11, 12),
+                Span(s, 14, 15),
+            ],
+        ),
+    )
+
+    s = "[]"
+    assert array_pattern(s) == Success(
+        Span(s, len(s), len(s)),
+        Node(
+            Span(s, 0, len(s)),
+            Pattern.Array,
+            children=[],
+            tokens=[Span(s, 0, 1), Span(s, 1, 2)],
+        ),
+    )
+
+    s = "[...r]"
+    assert array_pattern(s) == Success(
+        Span(s, len(s), len(s)),
+        Node(
+            Span(s, 0, len(s)),
+            Pattern.Array,
+            children=[
+                Node(
+                    Span(s, 1, len(s) - 1),
+                    Pattern.Gather,
+                    children=[Node(Span(s, len(s) - 2, len(s) - 1), Pattern.Id)],
+                    tokens=[Span(s, 1, 4)],
+                )
+            ],
+            tokens=[Span(s, 0, 1), Span(s, len(s) - 1, len(s))],
+        ),
+    )
+
+    s = "[a, ...r]"
+    assert array_pattern(s) == Success(
+        Span(s, len(s), len(s)),
+        Node(
+            Span(s, 0, len(s)),
+            Pattern.Array,
+            children=[
+                Node(Span(s, 1, 2), Pattern.Id),
+                Node(
+                    Span(s, len(s) - 5, len(s) - 1),
+                    Pattern.Gather,
+                    children=[
+                        Node(Span(s, len(s) - 2, len(s) - 1), Pattern.Id),
+                    ],
+                    tokens=[Span(s, len(s) - 5, len(s) - 2)],
+                ),
+            ],
+            tokens=[Span(s, 0, 1), Span(s, 2, 3), Span(s, len(s) - 1, len(s))],
+        ),
+    )
 
 
 pattern.f = alt(integer_pattern, id_pattern, array_pattern)
