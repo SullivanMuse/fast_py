@@ -328,5 +328,26 @@ def test_array_pattern():
         ),
     )
 
+    s = "[...r, a]"
+    assert array_pattern(s) == Success(
+        Span(s, len(s), len(s)),
+        Node(
+            Span(s, 0, len(s)),
+            Pattern.Array,
+            children=[
+                Node(
+                    Span(s, 1, 5),
+                    Pattern.Gather,
+                    children=[
+                        Node(Span(s, 4, 5), Pattern.Id),
+                    ],
+                    tokens=[Span(s, 1, 4)],
+                ),
+                Node(Span(s, 7, 8), Pattern.Id),
+            ],
+            tokens=[Span(s, 0, 1), Span(s, 5, 6), Span(s, len(s) - 1, len(s))],
+        ),
+    )
+
 
 pattern.f = alt(integer_pattern, id_pattern, array_pattern)
