@@ -364,3 +364,13 @@ def test_array_pattern():
 
 
 pattern.f = alt(integer_pattern, id_pattern, array_pattern)
+
+break_statement = integer = map("break", lambda span, _: Node(span, Statement.Break))
+
+statement = alt(break_statement, expr)
+
+def statements_f(s):
+    sep = ws * ";" * ws
+    seq(statement, many0(sep, statement))
+
+statements.f = map(sep(statement, ";"), lambda span, rs: Node(span, Statement.Break, children=rs))

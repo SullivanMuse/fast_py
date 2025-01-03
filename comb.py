@@ -309,8 +309,6 @@ def map(p, f):
     @Parser
     def parse(s):
         if r := p(s):
-            print(f"{s = }")
-            print(f"{r.span = }")
             span = s.span(r.span)
             return Success(r.span, f(span, r.val))
         return Error(s)
@@ -437,7 +435,18 @@ def test_neg():
     assert p(s) == Success(Span(s), None), "Success"
 
 
-def sep(inner, sep):
+def sep(inner: str | Parser, sep: str | Parser):
+    """
+    Create parser for the following pattern:
+        `inner[sep] = inner (ws sep ws inner)* (ws sep ws)?`
+
+    Args:
+        inner (str | Parser): Main parser
+        sep (str | Parser): Separator parser
+
+    Returns:
+        Parser: Parser for inner[sep]
+    """
     inner = Parser.ensure(inner)
     sep = Parser.ensure(sep)
     sep = map(seq(ignore(ws), sep, ignore(ws)), lambda _, sep: sep)

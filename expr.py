@@ -75,7 +75,7 @@ class Node:
 
     def pprint(self, depth=0, tokens=False):
         op_str = f" {self.op.string()}" if self.op else ""
-        print(f"{depth * '  '}{self.ty.name}{op_str} {self.span.i}:{self.span.j} {repr(self.span.string())}")
+        print(f"{depth * '  '}{self.ty.name}{op_str} {self.span.start}:{self.span.stop} {repr(self.span.str())}")
         if tokens and self.tokens:
             print(f"{(depth + 1) * '  '}tokens = {' '.join(t.string() for t in self.tokens)}")
         for child in self.children:
