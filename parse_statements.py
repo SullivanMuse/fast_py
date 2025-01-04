@@ -1,7 +1,6 @@
+# Project
 from comb import *
-from expr import *
-from pprint import pprint
-
+from tree import *
 from parse_expr import expr
 
 

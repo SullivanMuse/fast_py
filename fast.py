@@ -6,15 +6,20 @@ import sys
 
 # Project imports
 import colors
-from parse import statements
+from parse_statements import statements
 
 
 def parse(args):
+    if args.command is not None:
+        if r := statements(args.command):
+            r.val.pprint()
+        else:
+            print(f"{colors.error}error {r.span.start}: {r.reason}{colors.reset}")
     for file in args.input:
         if r := statements(file.read()):
             r.val.pprint()
         else:
-            print(f"{colors.error}{r}{colors.reset}")
+            print(f"{colors.error}error {r.span.start}: {r.reason}{colors.reset}")
 
 
 def main():
@@ -29,6 +34,7 @@ def main():
         default=[sys.stdin],
         help="Files to parse",
     )
+    parse_parser.add_argument("-c", "--command", default=None, help="Command to execute directly")
     parse_parser.set_defaults(func=parse)
 
     args = parser.parse_args()
