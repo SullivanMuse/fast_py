@@ -7,6 +7,7 @@ from typing import Optional
 class Expr(Enum):
     Id = auto() # a
     Int = auto() # 123
+    Tag = auto() # :a
     Float = auto() # 123.456
     String = auto() # d"Hello\\, {x}"
     Array = auto() # [e0, e1, ...]
@@ -32,7 +33,7 @@ class Pattern(Enum):
     String = auto() # "Hello"
     Array = auto() # [p0, ...p1, p2]
     Range = auto() # [a]..[=][b]
-    Gather = auto() # ...r
+    Gather = auto() # ..r
     # {e0} dynamic literal pattern
     # p0 <- e0 Pattern guards
 

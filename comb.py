@@ -78,12 +78,12 @@ class Success(Result):
 
 @dataclass
 class Error(Result):
-    pass
+    reason: Optional[str] = None
 
 
 @dataclass
 class Fail(Result):
-    pass
+    reason: Optional[str] = None
 
 
 @dataclass
@@ -118,6 +118,14 @@ def tag(m):
         if s1.str() == m:
             return Success(s2, s1)
         return Error(s)
+
+    return parse
+
+
+def not_implemented(name):
+    @Parser
+    def parse(s):
+        return Fail(s, "Not implemented")
 
     return parse
 
@@ -450,6 +458,7 @@ def sep(inner: str | Parser, sep: str | Parser):
     inner = Parser.ensure(inner)
     sep = Parser.ensure(sep)
     sep = map(seq(ignore(ws), sep, ignore(ws)), lambda _, sep: sep)
+
     @Parser
     def parse(s0):
         s = s0
@@ -462,13 +471,16 @@ def sep(inner: str | Parser, sep: str | Parser):
             else:
                 break
         return Success(s, vals)
+
     return parse
 
 
 def test_sep():
     p = sep("x", ",")
     s = "x,x,x"
-    assert p(s) == Success(Span(s, len(s), len(s)), [Span(s, 0, 1), Span(s, 2, 3), Span(s, 4, 5)])
+    assert p(s) == Success(
+        Span(s, len(s), len(s)), [Span(s, 0, 1), Span(s, 2, 3), Span(s, 4, 5)]
+    )
 
 
 alpha = pred(one, lambda s: s.str().isalpha())
