@@ -1,16 +1,21 @@
-# Project
+# project
 from comb import *
 from tree import *
 from parse_expr import expr
 
 
+statements = Parser()
+
+expr_statment = map(expr, lambda span, inner: Node(span, Statement.Expr, children=[inner]))
+
 break_statement = map("break", lambda span, _: Node(span, Statement.Break))
 continue_statement = map("continue", lambda span, _: Node(span, Statement.Continue))
 return_statement = map(seq("return", opt(ignore(ws), expr)), lambda span, rs: Node(span, Statement.Return, children=[rs[1]] if rs[1] is not None else [], tokens=[rs[0]]))
 
-autonomous_statement = alt("")
-semi_statement = alt(break_statement, continue_statement, expr)
+autonomous_statement = not_implemented("autonomous_statement")
+semi_statement = alt(break_statement, continue_statement, expr_statment)
 
+loop = map(seq("loop", ignore(ws), "{", ignore(ws), statements, ignore(ws), "}"), lambda span, rs: Node(span, Statement.Loop, children=rs[4], tokens=[rs[0], rs[2], rs[6]]))
 
 def test_break_statement():
     s = "break"
@@ -40,11 +45,12 @@ def test_return_statement():
 
 
 @Parser
-def statements(s0):
+def statements_f(s0):
     s = s0
 
     statements_list = []
     tokens = []
+    sep = seq(ignore(ws), ";", ignore(ws))
 
     while True:
         # Semicolon not required
@@ -52,7 +58,7 @@ def statements(s0):
             s = r.span
             statements_list.append(r.val)
 
-            if r := seq(ignore(ws), ";", ignore(ws)):
+            if r := sep(s):
                 tokens.append(r.val[0])
                 s = r.span
 
@@ -61,7 +67,7 @@ def statements(s0):
             s = r.span
             statements_list.append(r.val)
 
-            if r := seq(ignore(ws), ";", ignore(ws)):
+            if r := sep(s):
                 tokens.append(r.val[0])
                 s = r.span
             else:
@@ -72,3 +78,6 @@ def statements(s0):
             break
 
     return Success(s, statements_list)
+
+
+statements.f = statements_f
