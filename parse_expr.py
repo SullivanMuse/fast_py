@@ -187,5 +187,5 @@ def test_spread():
     )
 
 
-atom.f = alt(integer, floating, string, id, tag_expr, array, paren)
+atom.f = alt(integer, floating, string, id, tag_expr, array, paren, spread)
 expr.f = atom
