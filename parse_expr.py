@@ -168,5 +168,24 @@ def test_paren():
     )
 
 
+spread = map(
+    seq("..", ignore(ws), expr),
+    lambda span, rs: Node(span, Expr.Spread, children=[rs[1]], tokens=[rs[0]]),
+)
+
+
+def test_spread():
+    s = "..r"
+    assert spread(s) == Success(
+        Span(s, len(s), len(s)),
+        Node(
+            Span(s, 0, len(s)),
+            Expr.Spread,
+            children=[Node(Span(s, 2, 3), Expr.Id)],
+            tokens=[Span(s, 0, 2)],
+        ),
+    )
+
+
 atom.f = alt(integer, floating, string, id, tag_expr, array, paren)
 expr.f = atom
