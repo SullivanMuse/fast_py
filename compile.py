@@ -11,7 +11,7 @@ from vm.value import Value, ValueTy
 class Scope:
     prev: Optional["Scope"] = None
     map: dict[str, int] = field(default_factory=dict)
-    anon_count: int = 0
+    temporary_count: int = 0
 
     def __getitem__(self, key) -> int:
         try:
@@ -24,9 +24,9 @@ class Scope:
     def __setitem__(self, key, value):
         self.map[key] = value
 
-    def anon(self) -> int:
-        ix = len(self.map) + self.anon_count
-        self.anon_count += 1
+    def temporary(self) -> int:
+        ix = len(self.map) + self.temporary_count
+        self.temporary_count += 1
         return ix
 
 
@@ -52,13 +52,13 @@ class Compiler:
         self.code.append(code)
         match code.ty:
             case InstrTy.Push:
-                ix = self.scope.anon()
+                ix = self.scope.temporary()
 
             case InstrTy.Call:
-                ix = self.scope.anon()
+                ix = self.scope.temporary()
 
             case InstrTy.Array:
-                ix = self.scope.anon()
+                ix = self.scope.temporary()
 
             case InstrTy.ArrayPush:
                 ix = None

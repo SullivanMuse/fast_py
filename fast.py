@@ -11,12 +11,14 @@ from parse_statements import statements
 def parse(args):
     if args.command is not None:
         if r := statements(args.command):
-            print(r.val)
+            for statement in r.val:
+                print(statement)
         else:
             print(f"{colors.error}error {r.span.start}: {r.reason}{colors.reset}")
     for file in args.input:
         if r := statements(file.read()):
-            print(r.val)
+            for statement in r.val:
+                print(statement)
         else:
             print(f"{colors.error}error {r.span.start}: {r.reason}{colors.reset}")
 
