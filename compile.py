@@ -37,7 +37,7 @@ class FnSpec:
     result_ix: int
 
 
-@dataclass
+@dataclass(frozen=True)
 class CompileError(Exception):
     span: Span
     reason: str

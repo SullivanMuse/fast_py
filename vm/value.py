@@ -26,5 +26,5 @@ class Value(FormatNode):
         return f"{self.ty.name}"
 
     @classmethod
-    def closure(cls, code=list["Instr"], captures=list["Value"]):
+    def closure(cls, code=list, captures=list["Value"]):
         return cls(ValueTy.Closure, [code, captures])
