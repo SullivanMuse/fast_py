@@ -1,8 +1,6 @@
-# builtin
 from dataclasses import dataclass, field
 from enum import auto, Enum
 
-# project
 from format_node import FormatNode
 
 

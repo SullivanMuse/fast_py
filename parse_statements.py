@@ -1,4 +1,3 @@
-# project
 from comb import *
 from tree import *
 from parse_expr import expr

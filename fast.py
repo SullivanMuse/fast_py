@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 
-# builtin
 import argparse
 import sys
 
-# project
 import colors
 from compile import Compiler
 from parse_statements import statements

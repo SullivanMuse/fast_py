@@ -1,8 +1,6 @@
-# builtin
 from dataclasses import dataclass, field
 from typing import Optional
 
-# project
 from comb import Span
 from vm.instr import Im, Instr, InstrTy
 from tree import Expr, ExprTy, Statement, SyntaxNode, StatementTy

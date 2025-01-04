@@ -1,9 +1,6 @@
-# builtin
 from dataclasses import dataclass, field
 from enum import auto, Enum
-from typing import Any
 
-# project
 from format_node import FormatNode
 from vm.value import Value
 

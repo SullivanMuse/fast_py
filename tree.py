@@ -1,10 +1,8 @@
-# builtin
 from comb import Span
 from dataclasses import dataclass, field
 from enum import auto, Enum
 from typing import Optional
 
-# project
 from format_node import FormatNode
 
 
