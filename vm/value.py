@@ -2,6 +2,9 @@
 from dataclasses import dataclass, field
 from enum import auto, Enum
 
+# project
+from format_node import FormatNode
+
 
 class ValueTy(Enum):
     # basic
@@ -17,9 +20,12 @@ class ValueTy(Enum):
 
 
 @dataclass
-class Value:
+class Value(FormatNode):
     ty: ValueTy
     children: list["Value"] = field(default_factory=list)
+
+    def str(self):
+        return f"{self.ty.name}"
 
     @classmethod
     def closure(cls, code=list["Instr"], captures=list["Value"]):

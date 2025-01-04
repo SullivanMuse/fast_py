@@ -1,3 +1,4 @@
+# builtin
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
@@ -7,6 +8,9 @@ class Span:
     string: str
     start: int = 0
     stop: int = None
+
+    def __str__(self):
+        return f"{self._range().start}:{self._range().stop} {repr(self.str())}"
 
     def str(self):
         return self.string[self._slice()]

@@ -13,12 +13,12 @@ from parse_statements import statements
 def parse(args):
     if args.command is not None:
         if r := statements(args.command):
-            r.val.pprint()
+            print(r.val)
         else:
             print(f"{colors.error}error {r.span.start}: {r.reason}{colors.reset}")
     for file in args.input:
         if r := statements(file.read()):
-            r.val.pprint()
+            print(r.val)
         else:
             print(f"{colors.error}error {r.span.start}: {r.reason}{colors.reset}")
 
@@ -28,18 +28,21 @@ def compile(args):
     if args.command is not None:
         if r := statements(args.command):
             expr = r.val
+            print("(Statements)")
             for statement in expr:
-                statement.pprint()
+                print(statement)
             compiler.compile(expr)
+            print()
+            print("(Code)")
             for code in compiler.code:
-                code.pprint()
+                print(code)
         else:
             print(f"{colors.error}error {r.span.start}: {r.reason}{colors.reset}")
     for file in args.input:
         if r := statements(file.read()):
             expr = r.val
             if r := compiler.compile(expr):
-                r.val.pprint()
+                print(r.val)
             else:
                 print(f"{colors.error}error {r.span.start}: {r.reason}{colors.reset}")
         else:
@@ -71,7 +74,7 @@ def main():
 
     args = parser.parse_args()
 
-    print(f"{args = }")
+    # print(f"{args = }")
 
     args.func(args)
 

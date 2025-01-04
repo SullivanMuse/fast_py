@@ -11,12 +11,12 @@ atom = Parser()
 ## integer
 dec_digits = many1(digit)
 dec_run = map(seq(dec_digits, many0("_", dec_digits)), lambda span, _: span)
-integer = map(dec_run, lambda span, _: Node(span, Expr.Int))
+integer = map(dec_run, lambda span, _: SyntaxNode(span, ExprTy.Int))
 
 
 def test_integer():
     s = "1234"
-    node = Node(Span(s, 0, len(s)), Expr.Int)
+    node = SyntaxNode(Span(s, 0, len(s)), ExprTy.Int)
     assert integer(s) == Success(Span(s, len(s), len(s)), node), "Success"
 
     s = ""
@@ -29,13 +29,13 @@ exponent = map(seq("e", opt("-"), dec_run), lambda span, _: span)
 s = seq(dec_run, opt(fraction), opt(exponent))
 floating = map(
     pred(s, lambda x: not (x[1] is None or x[2] is None)),
-    lambda span, _: Node(span, Expr.Float),
+    lambda span, _: SyntaxNode(span, ExprTy.Float),
 )
 
 
 def test_float():
     s = "123.456e789"
-    node = Node(Span(s, 0, len(s)), Expr.Float)
+    node = SyntaxNode(Span(s, 0, len(s)), ExprTy.Float)
     assert floating(s) == Success(Span(s, len(s), len(s)), node), "Success"
 
     s = "123"
@@ -67,13 +67,13 @@ keywords = alt(
 name = map(
     seq(neg(keywords), many1(alpha), many0("_", many1(alnum))), lambda span, _: span
 )
-id = map(name, lambda span, _: Node(span, Expr.Id))
-tag_expr = map(seq(ignore(":"), name), lambda span, r: Node(span, Expr.Tag, tokens=[r]))
+id = map(name, lambda span, _: SyntaxNode(span, ExprTy.Id))
+tag_expr = map(seq(ignore(":"), name), lambda span, r: SyntaxNode(span, ExprTy.Tag, tokens=[r]))
 
 
 def test_tag_expr():
     s = ":asdf"
-    node = Node(Span(s, 0, len(s)), Expr.Tag, tokens=[Span(s, 1, len(s))])
+    node = SyntaxNode(Span(s, 0, len(s)), ExprTy.Tag, tokens=[Span(s, 1, len(s))])
     assert tag_expr(s) == Success(Span(s, len(s), len(s)), node), "Success"
 
     s = ""
@@ -82,7 +82,7 @@ def test_tag_expr():
 
 def test_id():
     s = "asdf"
-    node = Node(Span(s, 0, len(s)), Expr.Id)
+    node = SyntaxNode(Span(s, 0, len(s)), ExprTy.Id)
     assert id(s) == Success(Span(s, len(s), len(s)), node), "Success"
 
     s = "123"
@@ -98,9 +98,9 @@ piece = map(many0(alt(regular, escape)), lambda span, _: span)
 string_impl = seq(ignore('"'), many0(piece, interpolant), piece, ignore('"'))
 string = starmap(
     string_impl,
-    lambda span, pis, piece: Node(
+    lambda span, pis, piece: SyntaxNode(
         span,
-        Expr.String,
+        ExprTy.String,
         children=[i for _, i in pis],
         tokens=[*(p for p, _ in pis), piece],
     ),
@@ -112,7 +112,7 @@ def test_string():
     assert len(s) == 8
     assert string(s) == Success(
         Span(s, len(s), len(s)),
-        Node(Span(s, 0, len(s)), Expr.String, children=[], tokens=[Span(s, 1, 7)]),
+        SyntaxNode(Span(s, 0, len(s)), ExprTy.String, children=[], tokens=[Span(s, 1, 7)]),
     )
 
     s = '"asdf\\"'
@@ -123,8 +123,8 @@ def test_string():
 ## array
 array = starmap(
     seq("[", ignore(ws), expr_list, ignore(ws), "]"),
-    lambda span, lsq, exprs, rsq: Node(
-        span, Expr.Array, children=exprs, tokens=[lsq, rsq]
+    lambda span, lsq, exprs, rsq: SyntaxNode(
+        span, ExprTy.Array, children=exprs, tokens=[lsq, rsq]
     ),
 )
 
@@ -133,13 +133,13 @@ def test_array():
     s = "[x, y, z]"
     assert array(s) == Success(
         Span(s, len(s), len(s)),
-        Node(
+        SyntaxNode(
             Span(s, 0, len(s)),
-            Expr.Array,
+            ExprTy.Array,
             children=[
-                Node(Span(s, 1, 2), Expr.Id),
-                Node(Span(s, 4, 5), Expr.Id),
-                Node(Span(s, 7, 8), Expr.Id),
+                SyntaxNode(Span(s, 1, 2), ExprTy.Id),
+                SyntaxNode(Span(s, 4, 5), ExprTy.Id),
+                SyntaxNode(Span(s, 7, 8), ExprTy.Id),
             ],
             tokens=[Span(s, 0, 1), Span(s, len(s) - 1, len(s))],
         ),
@@ -149,8 +149,8 @@ def test_array():
 ## paren
 paren = starmap(
     seq("(", expr, ")"),
-    lambda span, lpar, expr, rpar: Node(
-        span, Expr.Paren, children=[expr], tokens=[lpar, rpar]
+    lambda span, lpar, expr, rpar: SyntaxNode(
+        span, ExprTy.Paren, children=[expr], tokens=[lpar, rpar]
     ),
 )
 
@@ -159,10 +159,10 @@ def test_paren():
     s = "(x)"
     assert paren(s) == Success(
         Span(s, len(s), len(s)),
-        Node(
+        SyntaxNode(
             Span(s, 0, len(s)),
-            Expr.Paren,
-            children=[Node(Span(s, 1, 2), Expr.Id)],
+            ExprTy.Paren,
+            children=[SyntaxNode(Span(s, 1, 2), ExprTy.Id)],
             tokens=[Span(s, 0, 1), Span(s, 2, 3)],
         ),
     )
@@ -170,7 +170,7 @@ def test_paren():
 
 spread = map(
     seq("..", ignore(ws), expr),
-    lambda span, rs: Node(span, Expr.Spread, children=[rs[1]], tokens=[rs[0]]),
+    lambda span, rs: SyntaxNode(span, ExprTy.Spread, children=[rs[1]], tokens=[rs[0]]),
 )
 
 
@@ -178,10 +178,10 @@ def test_spread():
     s = "..r"
     assert spread(s) == Success(
         Span(s, len(s), len(s)),
-        Node(
+        SyntaxNode(
             Span(s, 0, len(s)),
-            Expr.Spread,
-            children=[Node(Span(s, 2, 3), Expr.Id)],
+            ExprTy.Spread,
+            children=[SyntaxNode(Span(s, 2, 3), ExprTy.Id)],
             tokens=[Span(s, 0, 2)],
         ),
     )

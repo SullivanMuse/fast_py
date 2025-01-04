@@ -4,8 +4,8 @@ from typing import Optional
 
 # project
 from comb import Span
-from vm.instr import Im, InstrTy
-from tree import Expr, Node, Statement
+from vm.instr import Im, Instr, InstrTy
+from tree import Expr, ExprTy, Statement, SyntaxNode, StatementTy
 from vm.value import Value, ValueTy
 
 
@@ -35,7 +35,7 @@ class Scope:
 @dataclass
 class FnSpec:
     captures: list[int]
-    code: list[Node]
+    code: list[SyntaxNode]
     result_ix: int
 
 
@@ -48,9 +48,9 @@ class CompileError(Exception):
 @dataclass
 class Compiler:
     scope: Scope = field(default_factory=Scope)
-    code: list[Node] = field(default_factory=list)
+    code: list[SyntaxNode] = field(default_factory=list)
 
-    def push(self, code: Node) -> int:
+    def push(self, code: SyntaxNode) -> int:
         self.code.append(code)
         match code.ty:
             case InstrTy.Push:
@@ -76,7 +76,7 @@ class Compiler:
 
     def compile_statement(self, statement: Statement) -> Optional[int]:
         match statement.ty:
-            case Statement.Expr:
+            case StatementTy.Expr:
                 return self.compile_expr(statement.children[0])
 
             case _:
@@ -88,58 +88,58 @@ class Compiler:
         for statement in statements:
             result_ix = self.compile_statement(statement)
         if result_ix is None:
-            instr = Node(InstrTy.Push, [Im(Value(ValueTy.Unit))])
+            instr = Instr(InstrTy.Push, [Im(Value(ValueTy.Unit))])
             result_ix = self.push(instr)
         self.scope = self.scope.prev
         return result_ix
 
-    def compile_expr(self, expr: Node) -> int:
+    def compile_expr(self, expr: Expr) -> int:
         match expr.ty:
-            case Expr.Id:
+            case ExprTy.Id:
                 id = expr.span.str()
                 item_ix = self.scope[id]
-                instr = Node(InstrTy.Local, [item_ix])
+                instr = Instr(InstrTy.Local, [item_ix])
                 return self.push(instr)
 
-            case Expr.Int:
+            case ExprTy.Int:
                 value = Value(ValueTy.Int, [int(expr.span.str())])
-                instr = Node(ty=InstrTy.Push, children=[value])
+                instr = Instr(ty=InstrTy.Push, children=[value])
                 return self.push(instr)
 
-            case Expr.Tag:
+            case ExprTy.Tag:
                 value = Value(ValueTy.Tag, [expr.span.str()])
-                instr = Node(InstrTy.Push, [value])
+                instr = Instr(InstrTy.Push, [value])
                 return self.push(instr)
 
-            case Expr.Float:
+            case ExprTy.Float:
                 value = Value(ValueTy.Float, [float(expr.span.str())])
-                instr = Node(InstrTy.Push, [value])
+                instr = Instr(InstrTy.Push, [value])
                 return self.push(instr)
 
-            case Expr.String:
+            case ExprTy.String:
                 raise NotImplementedError
 
-            case Expr.Array:
+            case ExprTy.Array:
                 length = Im(Value(ValueTy.Int, len(expr.children)))
-                instr = Node(InstrTy.Array, [length])
+                instr = Instr(InstrTy.Array, [length])
                 array_ix = Im(Value(ValueTy.Int, [self.push(instr)]))
                 for child in expr.children:
-                    if child.ty == Expr.Spread:
+                    if child.ty == ExprTy.Spread:
                         item_ix = Im(Value(ValueTy.Int, [self.compile_expr(child.child)]))
-                        instr = Node(InstrTy.ArrayExtend, [array_ix, item_ix])
+                        instr = Instr(InstrTy.ArrayExtend, [array_ix, item_ix])
                     else:
                         item_ix = Im(Value(ValueTy.Int, [self.compile_expr(child)]))
-                        instr = Node(InstrTy.ArrayPush, [array_ix, item_ix])
+                        instr = Instr(InstrTy.ArrayPush, [array_ix, item_ix])
                     self.push(instr)
                 return array_ix
 
-            case Expr.Spread:
+            case ExprTy.Spread:
                 raise CompileError("Spread expression outside of array literal")
 
-            case Expr.Paren:
+            case ExprTy.Paren:
                 return self.compile_expr(expr.children[0])
 
-            case Expr.Fn:
+            case ExprTy.Fn:
                 # Compute free variables
                 free = expr.free()
 
@@ -166,36 +166,36 @@ class Compiler:
                 result_ix = new_compiler.compile(body)
                 spec = FnSpec(captures.values(), new_compiler.code, result_ix)
 
-                return self.push(Node(InstrTy.Closure, [spec]))
+                return self.push(Instr(InstrTy.Closure, [spec]))
 
-            case Expr.Block:
+            case ExprTy.Block:
                 return self.compile_scope(expr.children)
 
-            case Expr.Match:
+            case ExprTy.Match:
                 raise NotImplementedError
 
-            case Expr.Loop:
+            case ExprTy.Loop:
                 raise NotImplementedError
 
-            case Expr.Call:
+            case ExprTy.Call:
                 fn_ix = self.compile_expr(expr.children[0])
                 args_ix = []
                 for child in expr.children[1:]:
                     args_ix.append(self.compile_expr(child))
                 for arg_ix in args_ix:
-                    self.push(Node(InstrTy.Push, [Im(Value(ValueTy.Int, [arg_ix]))]))
-                return self.push(Node(InstrTy.Call, [Im(Value(ValueTy.Int, [fn_ix]))]))
+                    self.push(Instr(InstrTy.Push, [Im(Value(ValueTy.Int, [arg_ix]))]))
+                return self.push(Instr(InstrTy.Call, [Im(Value(ValueTy.Int, [fn_ix]))]))
 
-            case Expr.Index:
+            case ExprTy.Index:
                 raise NotImplementedError
 
-            case Expr.Binary:
+            case ExprTy.Binary:
                 raise NotImplementedError
 
-            case Expr.Unary:
+            case ExprTy.Unary:
                 raise NotImplementedError
 
-            case Expr.Comparison:
+            case ExprTy.Comparison:
                 raise NotImplementedError
 
             case _:
