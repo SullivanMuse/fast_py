@@ -33,12 +33,12 @@ class Loc(FormatNode):
 
 
 class InstrTy(Enum):
-    Push = auto() # Push a literal value
-    Call = auto() # Call a closure
+    Push = auto()  # Push a literal value
+    Call = auto()  # Call a closure
 
     # Array
-    Array = auto() # Create an array 1 ->
-    ArrayPush = auto() # Push an element into an array
+    Array = auto()  # Create an array 1 ->
+    ArrayPush = auto()  # Push an element into an array
 
 
 @dataclass

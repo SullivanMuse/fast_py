@@ -125,7 +125,9 @@ class Compiler:
                 array_ix = Im(Value(ValueTy.Int, [self.push(instr)]))
                 for child in expr.children:
                     if child.ty == ExprTy.Spread:
-                        item_ix = Im(Value(ValueTy.Int, [self.compile_expr(child.child)]))
+                        item_ix = Im(
+                            Value(ValueTy.Int, [self.compile_expr(child.child)])
+                        )
                         instr = Instr(InstrTy.ArrayExtend, [array_ix, item_ix])
                     else:
                         item_ix = Im(Value(ValueTy.Int, [self.compile_expr(child)]))

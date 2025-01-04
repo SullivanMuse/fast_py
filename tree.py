@@ -90,7 +90,16 @@ class Expr(SyntaxNode):
                 pass
 
             # Union of children
-            case ExprTy.Array | ExprTy.Spread | ExprTy.Paren | ExprTy.Call | ExprTy.Index | ExprTy.Binary | ExprTy.Unary | ExprTy.Comparison:
+            case (
+                ExprTy.Array
+                | ExprTy.Spread
+                | ExprTy.Paren
+                | ExprTy.Call
+                | ExprTy.Index
+                | ExprTy.Binary
+                | ExprTy.Unary
+                | ExprTy.Comparison
+            ):
                 for child in self.children:
                     child.free(set_)
 

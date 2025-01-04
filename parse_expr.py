@@ -68,7 +68,9 @@ name = map(
     seq(neg(keywords), many1(alpha), many0("_", many1(alnum))), lambda span, _: span
 )
 id = map(name, lambda span, _: SyntaxNode(span, ExprTy.Id))
-tag_expr = map(seq(ignore(":"), name), lambda span, r: SyntaxNode(span, ExprTy.Tag, tokens=[r]))
+tag_expr = map(
+    seq(ignore(":"), name), lambda span, r: SyntaxNode(span, ExprTy.Tag, tokens=[r])
+)
 
 
 def test_tag_expr():
@@ -112,7 +114,9 @@ def test_string():
     assert len(s) == 8
     assert string(s) == Success(
         Span(s, len(s), len(s)),
-        SyntaxNode(Span(s, 0, len(s)), ExprTy.String, children=[], tokens=[Span(s, 1, 7)]),
+        SyntaxNode(
+            Span(s, 0, len(s)), ExprTy.String, children=[], tokens=[Span(s, 1, 7)]
+        ),
     )
 
     s = '"asdf\\"'

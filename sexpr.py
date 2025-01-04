@@ -5,12 +5,15 @@ def parse(s):
     tokens = tokenize(s)
     expr = parse_expr(tokens)
     if tokens:
-        raise ValueError("Unexpected tokens remaining: " + " ".join(iter(lambda: tokens.next(), None)))
+        raise ValueError(
+            "Unexpected tokens remaining: "
+            + " ".join(iter(lambda: tokens.next(), None))
+        )
     return expr
 
 
 def tokenize(s):
-    return Peek(re.findall(r'\(|\)|[^\s()]+', s))
+    return Peek(re.findall(r"\(|\)|[^\s()]+", s))
 
 
 class Peek:

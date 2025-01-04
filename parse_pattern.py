@@ -172,7 +172,9 @@ def test_array_pattern():
                 SyntaxNode(
                     Span(s, 1, len(s) - 1),
                     PatternTy.Gather,
-                    children=[SyntaxNode(Span(s, len(s) - 2, len(s) - 1), PatternTy.Id)],
+                    children=[
+                        SyntaxNode(Span(s, len(s) - 2, len(s) - 1), PatternTy.Id)
+                    ],
                     tokens=[Span(s, 1, 3)],
                 )
             ],
