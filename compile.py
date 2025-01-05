@@ -4,7 +4,7 @@ from typing import Optional
 from comb import Span
 from vm.instr import Im, Instr, InstrTy
 from tree import Expr, ExprTy, Statement, SyntaxNode, StatementTy
-from vm.value import Value, ValueTy
+from vm.value import ClosureSpec, Value, ValueTy
 
 
 @dataclass
@@ -28,13 +28,6 @@ class Scope:
         ix = len(self.map) + self.temporary_count
         self.temporary_count += 1
         return ix
-
-
-@dataclass
-class FnSpec:
-    captures: list[int]
-    code: list[SyntaxNode]
-    result_ix: int
 
 
 @dataclass(frozen=True)
@@ -164,7 +157,7 @@ class Compiler:
                 # Compile the function
                 new_compiler = Compiler(scope)
                 result_ix = new_compiler.compile(body)
-                spec = FnSpec(captures.values(), new_compiler.code, result_ix)
+                spec = ClosureSpec(new_compiler.code, len(args), captures.values())
 
                 return self.push(Instr(InstrTy.Closure, [spec]))
 

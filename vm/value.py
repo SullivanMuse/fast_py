@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from enum import auto, Enum
 
 from format_node import FormatNode
+from vm.instr import Instr
 
 
 class ValueTy(Enum):
@@ -25,6 +26,15 @@ class Value(FormatNode):
     def str(self):
         return f"{self.ty.name}"
 
-    @classmethod
-    def closure(cls, code=list, captures=list["Value"]):
-        return cls(ValueTy.Closure, [code, captures])
+
+@dataclass
+class ClosureSpec:
+    code: list[Instr]
+    args: int
+    captures: list[int]
+
+
+@dataclass
+class Closure:
+    spec: ClosureSpec
+    captures: list[Value]

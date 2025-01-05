@@ -2,12 +2,11 @@ from dataclasses import dataclass, field
 from enum import auto, Enum
 
 from format_node import FormatNode
-from vm.value import Value
 
 
 @dataclass
 class Im(FormatNode):
-    value: Value
+    value: "Value"
 
     def str(self):
         return f"im {self.value}"
@@ -31,11 +30,14 @@ class Loc(FormatNode):
 
 class InstrTy(Enum):
     Push = auto()  # Push a literal value
-    Call = auto()  # Call a closure
 
     # Array
     Array = auto()  # Create an array 1 ->
     ArrayPush = auto()  # Push an element into an array
+
+    # Closure
+    Closure = auto()  # Create a closure
+    Call = auto()  # Call a closure
 
 
 @dataclass
