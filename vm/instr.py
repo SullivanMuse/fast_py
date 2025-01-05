@@ -4,8 +4,12 @@ from enum import auto, Enum
 from format_node import FormatNode
 
 
+class ValueSpec:
+    pass
+
+
 @dataclass
-class Im(FormatNode):
+class Imm(ValueSpec, FormatNode):
     value: "Value"
 
     def str(self):
@@ -17,7 +21,7 @@ class Im(FormatNode):
 
 
 @dataclass
-class Loc(FormatNode):
+class Loc(ValueSpec, FormatNode):
     index: int
 
     def str(self):
@@ -43,7 +47,7 @@ class InstrTy(Enum):
 @dataclass
 class Instr(FormatNode):
     ty: InstrTy
-    children: list[Im | Loc] = field(default_factory=list)
+    children: list[Imm | Loc] = field(default_factory=list)
 
     def str(self):
         return f"{self.ty.name}"

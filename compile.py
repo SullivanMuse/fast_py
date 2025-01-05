@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from comb import Span
-from vm.instr import Im, Instr, InstrTy
+from vm.instr import Imm, Instr, InstrTy
 from tree import Expr, ExprTy, Statement, SyntaxNode, StatementTy
 from vm.value import ClosureSpec, Value, ValueTy
 
@@ -79,7 +79,7 @@ class Compiler:
         for statement in statements:
             result_ix = self.compile_statement(statement)
         if result_ix is None:
-            instr = Instr(InstrTy.Push, [Im(Value(ValueTy.Unit))])
+            instr = Instr(InstrTy.Push, [Imm(Value(ValueTy.Unit))])
             result_ix = self.push(instr)
         self.scope = self.scope.prev
         return result_ix
@@ -111,17 +111,17 @@ class Compiler:
                 raise NotImplementedError
 
             case ExprTy.Array:
-                length = Im(Value(ValueTy.Int, len(expr.children)))
+                length = Imm(Value(ValueTy.Int, len(expr.children)))
                 instr = Instr(InstrTy.Array, [length])
-                array_ix = Im(Value(ValueTy.Int, [self.push(instr)]))
+                array_ix = Imm(Value(ValueTy.Int, [self.push(instr)]))
                 for child in expr.children:
                     if child.ty == ExprTy.Spread:
-                        item_ix = Im(
+                        item_ix = Imm(
                             Value(ValueTy.Int, [self.compile_expr(child.child)])
                         )
                         instr = Instr(InstrTy.ArrayExtend, [array_ix, item_ix])
                     else:
-                        item_ix = Im(Value(ValueTy.Int, [self.compile_expr(child)]))
+                        item_ix = Imm(Value(ValueTy.Int, [self.compile_expr(child)]))
                         instr = Instr(InstrTy.ArrayPush, [array_ix, item_ix])
                     self.push(instr)
                 return array_ix
@@ -176,8 +176,8 @@ class Compiler:
                 for child in expr.children[1:]:
                     args_ix.append(self.compile_expr(child))
                 for arg_ix in args_ix:
-                    self.push(Instr(InstrTy.Push, [Im(Value(ValueTy.Int, [arg_ix]))]))
-                return self.push(Instr(InstrTy.Call, [Im(Value(ValueTy.Int, [fn_ix]))]))
+                    self.push(Instr(InstrTy.Push, [Imm(Value(ValueTy.Int, [arg_ix]))]))
+                return self.push(Instr(InstrTy.Call, [Imm(Value(ValueTy.Int, [fn_ix]))]))
 
             case ExprTy.Index:
                 raise NotImplementedError
