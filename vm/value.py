@@ -1,30 +1,7 @@
-from dataclasses import dataclass, field
-from enum import auto, Enum
+from dataclasses import dataclass
 
 from format_node import FormatNode
 from vm.instr import Instr
-
-
-class ValueTy(Enum):
-    # basic
-    Unit = auto()
-    Int = auto()
-    Tag = auto()
-    Float = auto()
-
-    # aggregates
-    Array = auto()
-    Object = auto()
-    Closure = auto()
-
-
-@dataclass
-class Value(FormatNode):
-    ty: ValueTy
-    children: list["Value"] = field(default_factory=list)
-
-    def str(self):
-        return f"{self.ty.name}"
 
 
 @dataclass
@@ -35,6 +12,58 @@ class ClosureSpec:
 
 
 @dataclass
-class Closure:
+class Value(FormatNode):
+    def str(self):
+        return f"Value.{type(self).__name__}"
+
+    @property
+    def children(self):
+        return []
+
+
+@dataclass
+class Unit(Value):
+    pass
+
+
+@dataclass
+class Int(Value):
+    value: int
+
+
+@dataclass
+class Tag(Value):
+    value: str
+
+
+@dataclass
+class Float(Value):
+    value: float
+
+
+@dataclass
+class Array(Value):
+    values: list[Value]
+
+    @property
+    def children(self):
+        return self.values
+
+
+@dataclass
+class Object(Value):
+    values: dict[str, Value]
+
+    @property
+    def children(self):
+        return list(self.values.values())
+
+
+@dataclass
+class Closure(Value):
     spec: ClosureSpec
     captures: list[Value]
+
+    @property
+    def children(self):
+        return self.captures

@@ -2,9 +2,9 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from comb import Span
-from vm.instr import Imm, Instr, InstrTy
+from vm.instr import Ref, Spread, Instr
 from tree import Expr, ExprTy, Statement, SyntaxNode, StatementTy
-from vm.value import ClosureSpec, Value, ValueTy
+from vm.value import ClosureSpec, Unit, Value
 
 
 @dataclass
@@ -44,16 +44,16 @@ class Compiler:
     def push(self, code: SyntaxNode) -> int:
         self.code.append(code)
         match code.ty:
-            case InstrTy.Push:
+            case Instr.Push(ref):
                 ix = self.scope.temporary()
 
-            case InstrTy.Call:
+            case Instr.Call(ref):
                 ix = self.scope.temporary()
 
-            case InstrTy.Array:
+            case Instr.Array():
                 ix = self.scope.temporary()
 
-            case InstrTy.ArrayPush:
+            case Instr.ArrayPush(ref):
                 ix = None
 
             case _:
@@ -79,7 +79,7 @@ class Compiler:
         for statement in statements:
             result_ix = self.compile_statement(statement)
         if result_ix is None:
-            instr = Instr(InstrTy.Push, [Imm(Value(ValueTy.Unit))])
+            instr = Instr.Push(Ref.Imm(Unit()))
             result_ix = self.push(instr)
         self.scope = self.scope.prev
         return result_ix
@@ -89,40 +89,40 @@ class Compiler:
             case ExprTy.Id:
                 id = expr.span.str()
                 item_ix = self.scope[id]
-                instr = Instr(InstrTy.Local, [item_ix])
+                instr = Instr.Push(Ref.Loc(item_ix))
                 return self.push(instr)
 
             case ExprTy.Int:
                 value = Value(ValueTy.Int, [int(expr.span.str())])
-                instr = Instr(ty=InstrTy.Push, children=[value])
+                instr = Instr.Push(Ref.Imm(value))
                 return self.push(instr)
 
             case ExprTy.Tag:
                 value = Value(ValueTy.Tag, [expr.span.str()])
-                instr = Instr(InstrTy.Push, [value])
+                instr = Instr.Push(Ref.Imm(value))
                 return self.push(instr)
 
             case ExprTy.Float:
                 value = Value(ValueTy.Float, [float(expr.span.str())])
-                instr = Instr(InstrTy.Push, [value])
+                instr = Instr.Push(Ref.Imm(value))
                 return self.push(instr)
 
             case ExprTy.String:
                 raise NotImplementedError
 
             case ExprTy.Array:
-                length = Imm(Value(ValueTy.Int, len(expr.children)))
-                instr = Instr(InstrTy.Array, [length])
-                array_ix = Imm(Value(ValueTy.Int, [self.push(instr)]))
+                length = Ref.Imm(Value(ValueTy.Int, len(expr.children)))
+                instr = Instr.Array([None] * length)
+                array_ix = Ref.Imm(Value(ValueTy.Int, [self.push(instr)]))
                 for child in expr.children:
                     if child.ty == ExprTy.Spread:
-                        item_ix = Imm(
+                        item_ix = Ref.Imm(
                             Value(ValueTy.Int, [self.compile_expr(child.child)])
                         )
-                        instr = Instr(InstrTy.ArrayExtend, [array_ix, item_ix])
+                        instr = Instr.ArrayExtend(array_ix, item_ix)
                     else:
-                        item_ix = Imm(Value(ValueTy.Int, [self.compile_expr(child)]))
-                        instr = Instr(InstrTy.ArrayPush, [array_ix, item_ix])
+                        item_ix = Ref.Imm(Value(ValueTy.Int, [self.compile_expr(child)]))
+                        instr = Instr.ArrayPush(array_ix, item_ix)
                     self.push(instr)
                 return array_ix
 
@@ -159,7 +159,7 @@ class Compiler:
                 result_ix = new_compiler.compile(body)
                 spec = ClosureSpec(new_compiler.code, len(args), captures.values())
 
-                return self.push(Instr(InstrTy.Closure, [spec]))
+                return self.push(Instr.Closure(spec))
 
             case ExprTy.Block:
                 return self.compile_scope(expr.children)
@@ -176,8 +176,8 @@ class Compiler:
                 for child in expr.children[1:]:
                     args_ix.append(self.compile_expr(child))
                 for arg_ix in args_ix:
-                    self.push(Instr(InstrTy.Push, [Imm(Value(ValueTy.Int, [arg_ix]))]))
-                return self.push(Instr(InstrTy.Call, [Imm(Value(ValueTy.Int, [fn_ix]))]))
+                    self.push(Instr(Instr.Push, [Ref.Imm(Value(ValueTy.Int, [arg_ix]))]))
+                return self.push(Instr(Instr.Call, [Ref.Imm(Value(ValueTy.Int, [fn_ix]))]))
 
             case ExprTy.Index:
                 raise NotImplementedError
