@@ -69,6 +69,10 @@ class Closure(Value):
     spec: ClosureSpec
     captures: list[Value]
 
+    @classmethod
+    def from_code(cls, code):
+        return cls(ClosureSpec(code, 0, []), [])
+
     @property
     def children(self):
         return self.captures

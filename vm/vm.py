@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
 
-from errors import UnreachableError, VmError
 from vm.value import Bool, Closure, Value
 from vm.instr import (
     ArrayExtend,
     ArrayPush,
     Call,
     Imm,
+    Instr,
     Jump,
     Loc,
     Push,
@@ -43,7 +43,10 @@ class Vm:
     def push(self, value):
         self.frame.append(value)
 
-    def run(self, closure: Closure) -> Value:
+    def run(self, closure: list[Instr] | Closure) -> Value:
+        if not isinstance(closure, Closure):
+            closure = Closure.from_code(closure)
+
         self.push_frame(closure.spec.n_args)
         self.frame.extend(closure.captures)
         code = closure.spec.code
@@ -51,7 +54,9 @@ class Vm:
         instr_ix = 0
         while True:
             if instr_ix not in range(len(code)):
-                raise ValueError(f"instruction pointer ({instr_ix}) out of range ({len(code) = }); bad code")
+                raise ValueError(
+                    f"instruction pointer ({instr_ix}) out of range ({len(code) = }); bad code"
+                )
 
             match instr := code[instr_ix]:
                 case Push(value_ref):
@@ -89,6 +94,12 @@ class Vm:
                     return return_value
 
                 case _:
-                    raise NotImplementedError(f"`Vm.run` missing case for instruction: {instr}")
+                    raise NotImplementedError(
+                        f"`Vm.run` missing case for instruction: {instr}"
+                    )
 
             instr_ix += 1
+
+
+def run(closure):
+    return Vm().run(closure)
