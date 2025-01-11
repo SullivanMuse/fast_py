@@ -1,18 +1,18 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-from format_node import FormatNode
+from mixins import FormatNode, GetChildren
 from vm.instr import Instr
 
 
 @dataclass
 class ClosureSpec:
     code: list[Instr]
-    args: int
+    n_args: int
     captures: list[int]
 
 
 @dataclass
-class Value(FormatNode):
+class Value(FormatNode, GetChildren):
     def str(self):
         return f"Value.{type(self).__name__}"
 
@@ -24,6 +24,11 @@ class Value(FormatNode):
 @dataclass
 class Unit(Value):
     pass
+
+
+@dataclass
+class Bool(Value):
+    value: bool
 
 
 @dataclass
@@ -43,7 +48,7 @@ class Float(Value):
 
 @dataclass
 class Array(Value):
-    values: list[Value]
+    values: list[Value] = field(default_factory=list)
 
     @property
     def children(self):
@@ -67,3 +72,6 @@ class Closure(Value):
     @property
     def children(self):
         return self.captures
+
+
+Value.get_children()

@@ -1,16 +1,9 @@
 from dataclasses import dataclass
 
-from format_node import FormatNode
+from mixins import FormatNode, GetChildren
 
 
-class ChildGetter:
-    @classmethod
-    def _get_classes(cls):
-        for sub in cls.__subclasses__():
-            setattr(cls, sub.__name__, sub)
-
-
-class Ref(ChildGetter):
+class Ref(GetChildren):
     @property
     def children(self):
         return ()
@@ -32,16 +25,11 @@ class Loc(Ref, FormatNode):
         return f"loc {self.index}"
 
 
-Ref._get_classes()
+Ref.get_children()
 
 
 @dataclass
-class Spread(FormatNode):
-    value: Ref
-
-
-@dataclass
-class Instr(FormatNode, ChildGetter):
+class Instr(FormatNode, GetChildren):
     def str(self):
         return f"Instr.{type(self).__name__}"
 
@@ -57,11 +45,6 @@ class Push(Instr):
 
 
 @dataclass
-class Array(Instr):
-    values: list[Ref | Spread]
-
-
-@dataclass
 class ArrayPush(Instr):
     array: Ref
     value: Ref
@@ -74,13 +57,24 @@ class ArrayExtend(Instr):
 
 
 @dataclass
-class Closure(Instr):
+class ClosureNew(Instr):
     spec: "ClosureSpec"
 
 
 @dataclass
 class Call(Instr):
+    closure: Ref
+
+
+@dataclass
+class Jump(Instr):
+    condition: Ref
+    dest: int
+
+
+@dataclass
+class Return(Instr):
     value: Ref
 
 
-Instr._get_classes()
+Instr.get_children()

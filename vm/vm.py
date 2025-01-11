@@ -1,19 +1,30 @@
 from dataclasses import dataclass, field
 
-from vm.value import Closure, Value, ValueTy
-from vm.instr import Imm, InstrTy, Loc
+from errors import UnreachableError, VmError
+from vm.value import Bool, Closure, Value
+from vm.instr import (
+    ArrayExtend,
+    ArrayPush,
+    Call,
+    Imm,
+    Jump,
+    Loc,
+    Push,
+    ClosureNew,
+    Return,
+)
 
 
 @dataclass
 class Vm:
-    stack: list[list[Value]] = field(default_factory=list)
+    stack: list[list[Value]] = field(default_factory=lambda: [[]])
 
     @property
     def frame(self):
         return self.stack[-1]
 
     def push_frame(self, take_args):
-        self.stack.append(self.stack[-1][-take_args:])
+        self.stack.append(self.frame[-take_args:])
 
     def pop_frame(self) -> list[Value]:
         return self.stack.pop()
@@ -24,34 +35,60 @@ class Vm:
                 return value
 
             case Loc(ix):
-                return self.stack[-1][ix]
+                return self.frame[ix]
 
             case _:
                 raise TypeError
 
-    def run(self, code: list):
-        for instr in code:
-            match instr.ty:
-                case InstrTy.Push:
-                    self.stack[-1].append(self.resolve(instr.child))
+    def push(self, value):
+        self.frame.append(value)
 
-                case InstrTy.Call:
-                    closure = self.resolve(instr.child).child
+    def run(self, closure: Closure) -> Value:
+        self.push_frame(closure.spec.n_args)
+        self.frame.extend(closure.captures)
+        code = closure.spec.code
 
-                    # Push frame and take args
-                    self.push_frame(closure.spec.args)
-                    self.stack[-1].extend(closure.captures)
+        instr_ix = 0
+        while True:
+            if instr_ix not in range(len(code)):
+                raise ValueError(f"instruction pointer ({instr_ix}) out of range ({len(code) = }); bad code")
 
-                    # Run the code
-                    self.run(closure.spec.code)
+            match instr := code[instr_ix]:
+                case Push(value_ref):
+                    value = self.resolve(value_ref)
+                    self.push(value)
 
-                    frame = self.pop_frame()
-                    self.frame.append(frame[-1])
+                case Call(closure_ref):
+                    closure = self.resolve(closure_ref)
+                    self.push(self.run(closure))
 
-                case InstrTy.Closure:
-                    spec = instr.child
+                case ClosureNew(spec):
                     captures = [self.frame[i] for i in spec.captures]
-                    self.frame.append(Value(ValueTy.Closure, [Closure(spec, captures)]))
+                    closure = Closure(spec, captures)
+                    self.push(closure)
+
+                case ArrayPush(dest_ref, item_ref):
+                    dest = self.resolve(dest_ref)
+                    item = self.resolve(item_ref)
+                    dest.values.append(item)
+
+                case ArrayExtend(dest_ref, source_ref):
+                    dest = self.resolve(dest_ref)
+                    source = self.resolve(source_ref)
+                    dest.values.extend(source.values)
+
+                case Jump(condition_ref, dest_index):
+                    condition = self.resolve(condition_ref)
+                    if condition == Bool(True):
+                        instr_ix = dest_index
+                        continue
+
+                case Return(return_value_ref):
+                    return_value = self.resolve(return_value_ref)
+                    self.pop_frame()
+                    return return_value
 
                 case _:
-                    raise NotImplementedError
+                    raise NotImplementedError(f"`Vm.run` missing case for instruction: {instr}")
+
+            instr_ix += 1
