@@ -8,7 +8,7 @@ from vm.instr import Instr
 class ClosureSpec:
     code: list[Instr]
     n_args: int
-    captures: list[int]
+    capture_indices: list[int]
 
 
 @dataclass

@@ -63,7 +63,7 @@ class Vm:
                     self.push(self.run(closure))
 
                 case ClosureNew(spec):
-                    captures = [self.frame[i] for i in spec.captures]
+                    captures = [self.frame[i] for i in spec.capture_indices]
                     closure = Closure(spec, captures)
                     self.push(closure)
 
