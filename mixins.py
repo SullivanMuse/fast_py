@@ -34,3 +34,10 @@ class FormatNode:
 
     def __str__(self):
         return self._str_impl()
+
+
+class GetChildren:
+    @classmethod
+    def get_children(cls):
+        for sub in cls.__subclasses__():
+            setattr(cls, sub.__name__, sub)
