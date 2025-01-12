@@ -90,7 +90,7 @@ class TagExpr(Expr):
         :a
     """
 
-    pass
+    name: Span
 
 
 @dataclass
@@ -114,6 +114,8 @@ class StringExpr(Expr):
 
     fn: Optional[Span]
     items: list[str | Expr]
+    lquote: Span
+    rquote: Span
 
 
 @dataclass
@@ -124,7 +126,9 @@ class ArrayExpr(Expr):
         [e0, e1, ...]
     """
 
+    lbracket: Span
     items: list[Expr]
+    rbracket: Span
 
 
 @dataclass
@@ -137,6 +141,7 @@ class Spread(Expr):
         ...e0
     """
 
+    ellipsis: Span
     inner: Expr
 
 
@@ -148,7 +153,9 @@ class ParenExpr(Expr):
         (e0)
     """
 
-    pass
+    lpar: Span
+    inner: Expr
+    rpar: Span
 
 
 @dataclass
