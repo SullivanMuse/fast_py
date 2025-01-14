@@ -1,19 +1,8 @@
 from dataclasses import dataclass, field
 
-from vm.value import Bool, Closure, Value
-from vm.instr import (
-    ArrayExtend,
-    ArrayPush,
-    Call,
-    Imm,
-    Instr,
-    Jump,
-    Loc,
-    Pop,
-    Push,
-    ClosureNew,
-    Return,
-)
+from instr import (ArrayExtend, ArrayPush, Call, ClosureNew, Imm, Instr, Jump,
+                   Loc, Pop, Push, Return)
+from value import Bool, Closure, Value
 
 
 @dataclass

@@ -1,9 +1,9 @@
-from copy import deepcopy
-from enum import auto, Enum
-from inspect import currentframe as f
-from pathlib import Path
 import datetime as dt
 import json
+from copy import deepcopy
+from enum import Enum, auto
+from inspect import currentframe as f
+from pathlib import Path
 
 
 class Level(Enum):

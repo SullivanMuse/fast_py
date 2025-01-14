@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
+from instr import Instr
 from mixins import FormatNode, GetChildren
-from vm.instr import Instr
 
 
 @dataclass

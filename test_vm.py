@@ -1,6 +1,6 @@
-from vm.instr import ArrayPush, Imm, Loc, Push, Return
-from vm.value import Array, Closure, ClosureSpec, Unit
-from vm.vm import Vm
+from instr import ArrayPush, Imm, Loc, Push, Return
+from value import Array, Closure, Unit
+from vm import Vm
 
 
 def test_vm():

@@ -1,5 +1,5 @@
 from comb import *
-from parse_expr import name, dec_run, expr
+from parse_expr import dec_run, name
 from tree import *
 
 pattern = Parser()

@@ -2,9 +2,13 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from errors import CompileError
-from vm.instr import ArrayExtend, ArrayPush, Call, ClosureNew, Jump, Loc, Pop, Push, Ref
-from tree import ArrayExpr, BinaryExpr, BlockExpr, CallExpr, ComparisonExpr, Expr, ExprStatement, FloatExpr, FnExpr, IdExpr, IndexExpr, IntExpr, LoopExpr, MatchExpr, ParenExpr, Spread, Statement, StringExpr, SyntaxNode, TagExpr, UnaryExpr
-from vm.value import *
+from instr import (ArrayExtend, ArrayPush, Call, ClosureNew, Jump, Loc, Pop,
+                   Push, Ref)
+from tree import (ArrayExpr, BinaryExpr, BlockExpr, CallExpr, ComparisonExpr,
+                  Expr, ExprStatement, FloatExpr, FnExpr, IdExpr, IndexExpr,
+                  IntExpr, LoopExpr, MatchExpr, ParenExpr, Spread, Statement,
+                  StringExpr, SyntaxNode, TagExpr, UnaryExpr)
+from value import *
 
 
 @dataclass

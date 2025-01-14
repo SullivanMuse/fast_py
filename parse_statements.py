@@ -1,7 +1,6 @@
 from comb import *
-from tree import *
 from parse_expr import expr
-
+from tree import *
 
 statements = Parser()
 
