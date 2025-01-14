@@ -9,6 +9,7 @@ from vm.instr import (
     Instr,
     Jump,
     Loc,
+    Pop,
     Push,
     ClosureNew,
     Return,
@@ -92,6 +93,9 @@ class Vm:
                     return_value = self.resolve(return_value_ref)
                     self.pop_frame()
                     return return_value
+
+                case Pop():
+                    self.frame.pop()
 
                 case _:
                     raise NotImplementedError(

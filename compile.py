@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
-from comb import Span
-from vm.instr import Ref, Spread, Instr
-from tree import Expr, ExprTy, Statement, SyntaxNode, StatementTy
-from vm.value import ClosureSpec, Unit, Value
+from errors import CompileError
+from vm.instr import ArrayExtend, ArrayPush, Call, ClosureNew, Jump, Loc, Pop, Push, Ref
+from tree import ArrayExpr, BinaryExpr, BlockExpr, CallExpr, ComparisonExpr, Expr, ExprStatement, FloatExpr, FnExpr, IdExpr, IndexExpr, IntExpr, LoopExpr, MatchExpr, ParenExpr, Spread, Statement, StringExpr, SyntaxNode, TagExpr, UnaryExpr
+from vm.value import *
 
 
 @dataclass
@@ -13,9 +13,9 @@ class Scope:
     map: dict[str, int] = field(default_factory=dict)
     temporary_count: int = 0
 
-    def __getitem__(self, key) -> int:
+    def __getitem__(self, key) -> Loc:
         try:
-            return self.map[key]
+            return Loc(self.map[key])
         except KeyError:
             if self.prev is None:
                 raise KeyError
@@ -24,16 +24,14 @@ class Scope:
     def __setitem__(self, key, value):
         self.map[key] = value
 
-    def temporary(self) -> int:
+    def temporary(self) -> Loc:
         ix = len(self.map) + self.temporary_count
         self.temporary_count += 1
-        return ix
+        return Loc(ix)
 
-
-@dataclass(frozen=True)
-class CompileError(Exception):
-    span: Span
-    reason: str
+    def pop(self):
+        """Reduce temporaries"""
+        self.temporary_count -= 1
 
 
 @dataclass
@@ -41,100 +39,106 @@ class Compiler:
     scope: Scope = field(default_factory=Scope)
     code: list[SyntaxNode] = field(default_factory=list)
 
-    def push(self, code: SyntaxNode) -> int:
+    def push(self, code: SyntaxNode) -> Optional[Loc]:
         self.code.append(code)
+
+        ix = None
         match code.ty:
-            case Instr.Push(ref):
+            case Push(ref):
                 ix = self.scope.temporary()
 
-            case Instr.Call(ref):
+            case ArrayPush(ref):
+                self.scope.pop()
+
+            case ArrayExtend(array_loc, item_ref):
+                pass
+
+            case ClosureNew(spec):
                 ix = self.scope.temporary()
 
-            case Instr.Array():
+            case Call(ref):
                 ix = self.scope.temporary()
 
-            case Instr.ArrayPush(ref):
-                ix = None
+            case Jump(condition, dest):
+                pass
+
+            case Pop():
+                self.scope.pop()
 
             case _:
-                raise NotImplementedError
+                raise NotImplementedError(f"`Compiler.push({type(code).__name__})`")
 
         return ix
 
-    def compile(self, statements: list[Statement]):
-        for statement in statements:
-            self.compile_statement(statement)
-
     def compile_statement(self, statement: Statement) -> Optional[int]:
-        match statement.ty:
-            case StatementTy.Expr:
-                return self.compile_expr(statement.children[0])
+        match statement:
+            case ExprStatement(_, inner):
+                return self.compile_expr(inner)
 
             case _:
-                raise NotImplementedError
+                raise NotImplementedError(f"`Compiler.compile_statement({type(statement).__name__})`")
 
-    def compile_scope(self, statements: list[Statement]) -> int:
+    def compile_statements(self, statements: list[Statement]) -> int:
         self.scope = Scope(self.scope)
         result_ix = None
         for statement in statements:
             result_ix = self.compile_statement(statement)
         if result_ix is None:
-            instr = Instr.Push(Ref.Imm(Unit()))
+            instr = Push(Ref.Imm(Unit()))
             result_ix = self.push(instr)
         self.scope = self.scope.prev
         return result_ix
 
     def compile_expr(self, expr: Expr) -> int:
-        match expr.ty:
-            case ExprTy.Id:
-                id = expr.span.str()
-                item_ix = self.scope[id]
-                instr = Instr.Push(Ref.Loc(item_ix))
+        match expr:
+            case IdExpr(span):
+                name = span.str()
+                item_loc = self.scope[name]
+                instr = Push(item_loc)
                 return self.push(instr)
 
-            case ExprTy.Int:
-                value = Value(ValueTy.Int, [int(expr.span.str())])
-                instr = Instr.Push(Ref.Imm(value))
+            case IntExpr(span):
+                value = Int(int(span.str()))
+                instr = Push(Ref.Imm(value))
                 return self.push(instr)
 
-            case ExprTy.Tag:
-                value = Value(ValueTy.Tag, [expr.span.str()])
-                instr = Instr.Push(Ref.Imm(value))
+            case TagExpr(_, name):
+                value = Tag(name.str())
+                instr = Push(Ref.Imm(value))
                 return self.push(instr)
 
-            case ExprTy.Float:
-                value = Value(ValueTy.Float, [float(expr.span.str())])
-                instr = Instr.Push(Ref.Imm(value))
+            case FloatExpr(span):
+                value = Float(float(span.str()))
+                instr = Push(Ref.Imm(value))
                 return self.push(instr)
 
-            case ExprTy.String:
+            case StringExpr(_, fn, items, _, _):
                 raise NotImplementedError
 
-            case ExprTy.Array:
-                length = Ref.Imm(Value(ValueTy.Int, len(expr.children)))
-                instr = Instr.Array([None] * length)
-                array_ix = Ref.Imm(Value(ValueTy.Int, [self.push(instr)]))
-                for child in expr.children:
-                    if child.ty == ExprTy.Spread:
-                        item_ix = Ref.Imm(
-                            Value(ValueTy.Int, [self.compile_expr(child.child)])
-                        )
-                        instr = Instr.ArrayExtend(array_ix, item_ix)
-                    else:
-                        item_ix = Ref.Imm(Value(ValueTy.Int, [self.compile_expr(child)]))
-                        instr = Instr.ArrayPush(array_ix, item_ix)
-                    self.push(instr)
-                return array_ix
+            case ArrayExpr(span, _, items, _):
+                instr = Push(Array([None * len(items)]))
+                array_loc = self.push(instr)
+                for item in items:
+                    match item:
+                        case Spread(span, ellipsis, inner):
+                            item_loc = self.compile_expr(item)
+                            instr = ArrayExtend(array_loc, item_loc)
 
-            case ExprTy.Spread:
+                        case _:
+                            item_loc = self.compile_expr(item)
+                            instr = ArrayPush(array_loc, item_loc)
+                    self.push(instr)
+                return array_loc
+
+            case Spread(_, _, _):
                 raise CompileError("Spread expression outside of array literal")
 
-            case ExprTy.Paren:
-                return self.compile_expr(expr.children[0])
+            case ParenExpr(_, inner):
+                return self.compile_expr(inner)
 
-            case ExprTy.Fn:
+            case FnExpr(span, params, inner):
                 # Compute free variables
-                free = expr.free()
+                free = inner.free()
 
                 # Collect indices of captured variables
                 captures = {}
@@ -159,37 +163,31 @@ class Compiler:
                 result_ix = new_compiler.compile(body)
                 spec = ClosureSpec(new_compiler.code, len(args), captures.values())
 
-                return self.push(Instr.Closure(spec))
+                return self.push(ClosureNew(spec))
 
-            case ExprTy.Block:
-                return self.compile_scope(expr.children)
+            case BlockExpr(span, statements):
+                return self.compile_statements(statements)
 
-            case ExprTy.Match:
+            case MatchExpr(span, subject, arms):
                 raise NotImplementedError
 
-            case ExprTy.Loop:
+            case LoopExpr(span, statements):
                 raise NotImplementedError
 
-            case ExprTy.Call:
-                fn_ix = self.compile_expr(expr.children[0])
-                args_ix = []
-                for child in expr.children[1:]:
-                    args_ix.append(self.compile_expr(child))
-                for arg_ix in args_ix:
-                    self.push(Instr(Instr.Push, [Ref.Imm(Value(ValueTy.Int, [arg_ix]))]))
-                return self.push(Instr(Instr.Call, [Ref.Imm(Value(ValueTy.Int, [fn_ix]))]))
-
-            case ExprTy.Index:
+            case CallExpr(span):
                 raise NotImplementedError
 
-            case ExprTy.Binary:
+            case IndexExpr(span):
                 raise NotImplementedError
 
-            case ExprTy.Unary:
+            case BinaryExpr(span):
                 raise NotImplementedError
 
-            case ExprTy.Comparison:
+            case UnaryExpr(span):
+                raise NotImplementedError
+
+            case ComparisonExpr(span):
                 raise NotImplementedError
 
             case _:
-                raise NotImplementedError
+                raise NotImplementedError(f"`Compiler.compile({type(expr).__name__})`")

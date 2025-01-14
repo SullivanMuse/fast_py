@@ -52,8 +52,8 @@ class ArrayPush(Instr):
 
 @dataclass
 class ArrayExtend(Instr):
-    array: Ref
-    array_value: Ref
+    array_loc: Loc
+    item_ref: Ref
 
 
 @dataclass
@@ -75,6 +75,11 @@ class Jump(Instr):
 @dataclass
 class Return(Instr):
     value: Ref
+
+
+@dataclass
+class Pop(Instr):
+    pass
 
 
 Instr.get_children()

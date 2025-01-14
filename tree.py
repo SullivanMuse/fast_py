@@ -396,6 +396,17 @@ class ContinueStatement(Statement):
 
 
 @dataclass
+class BlockStatement(Statement):
+    """Block statement
+
+    Example:
+        { s0, s1, ... }
+    """
+
+    statements: list["Statement"]
+
+
+@dataclass
 class ReturnStatement(Statement):
     """
 
