@@ -436,6 +436,43 @@ def test_fn():
     )
 
 
+def test_block():
+    # success
+    assert block("{}") == Success(
+        span=Span(string="{}", start=2, stop=2),
+        val=BlockExpr(
+            span=Span(string="{}", start=0, stop=2),
+            lbrace=Span(string="{}", start=0, stop=1),
+            statements=[],
+            rbrace=Span(string="{}", start=1, stop=2),
+        ),
+    )
+
+    assert block("{x}") == Success(
+        span=Span(string="{x}", start=3, stop=3),
+        val=BlockExpr(
+            span=Span(string="{x}", start=0, stop=3),
+            lbrace=Span(string="{x}", start=0, stop=1),
+            statements=[
+                ExprStatement(
+                    span=Span(string="{x}", start=1, stop=2),
+                    inner=IdExpr(span=Span(string="{x}", start=1, stop=2)),
+                )
+            ],
+            rbrace=Span(string="{x}", start=2, stop=3),
+        ),
+    )
+
+    # {x;y}
+    # {x;y;}
+    # { x ; y ; }
+
+    # errors
+    # ""
+    # {;}
+    # {;x}
+
+
 def test_paren():
     s = "(x)"
     assert paren(s) == Success(
