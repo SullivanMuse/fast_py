@@ -436,6 +436,30 @@ def test_fn():
     )
 
 
+def test_call():
+    s = "f()"
+    assert call(s)
+
+    s = "f(x, y, z)"
+    assert call(s)
+
+    s = "f(x, y, z,)"
+    assert call(s)
+
+    s = "f ( x , y , z , )"
+    assert call(s)
+
+    # errors
+    s = ""
+    assert not call(s)
+
+    s = "f"
+    assert not call(s)
+
+    s = "f f"
+    assert not call(s)
+
+
 def test_loop_expr():
     s = ""
     assert not loop_expr(s)

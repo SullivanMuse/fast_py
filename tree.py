@@ -172,7 +172,10 @@ class CallExpr(Expr):
         e0(e1, e2, ...)
     """
 
-    pass
+    fn: Expr
+    lpar_token: Span
+    args: list[Expr]
+    rpar_token: Span
 
 
 @dataclass

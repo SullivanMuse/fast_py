@@ -86,6 +86,8 @@ string = starmap(
     ),
 )
 
+call = starmap(seq(atom, ws, "(", ws, sep(expr, ","), ws, ")"), CallExpr)
+
 ## array
 array = starmap(
     seq("[", ws, expr_list, ws, "]"),
