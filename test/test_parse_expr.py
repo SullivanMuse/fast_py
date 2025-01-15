@@ -21,7 +21,7 @@ def test_float():
 
 def test_tag_expr():
     s = ":asdf"
-    node = TagExpr(Span(s, 0, len(s)), Span(s, 1, len(s)))
+    node = TagExpr(Span(s, 0, len(s)))
     assert tag_expr(s) == Success(Span(s, len(s), len(s)), node), "Success"
 
     s = ""
@@ -436,6 +436,26 @@ def test_fn():
     )
 
 
+def test_loop_expr():
+    s = ""
+    assert not loop_expr(s)
+
+    s = "loop"
+    assert not loop_expr(s)
+
+    s = "loop {"
+    assert not loop_expr(s)
+
+    s = "loop }"
+    assert not loop_expr(s)
+
+    s = "loop {}"
+    assert loop_expr(s)
+
+    s = "loop {x; y}"
+    assert loop_expr(s)
+
+
 def test_block():
     # success
     assert block("{}") == Success(
@@ -456,6 +476,7 @@ def test_block():
             statements=[
                 ExprStatement(
                     span=Span(string="{x}", start=1, stop=2),
+                    semi_token=None,
                     inner=IdExpr(span=Span(string="{x}", start=1, stop=2)),
                 )
             ],

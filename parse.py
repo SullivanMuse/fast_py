@@ -54,7 +54,7 @@ name = map(
     seq(neg(keywords), many1(alpha), many0("_", many1(alnum))), lambda span, _: span
 )
 id = map(name, lambda span, _: IdExpr(span))
-tag_expr = map(seq(ignore(":"), name), lambda span, name: TagExpr(span, name))
+tag_expr = map(seq(ignore(":"), name), lambda span, _: TagExpr(span))
 
 
 ## string
@@ -197,22 +197,20 @@ pattern.f = alt(
 
 expr_statment = map(seq(expr), lambda span, inner: ExprStatement(span, None, inner))
 
-break_statement = map("break", lambda span, _: BreakStatement(span, None, None))
-continue_statement = map("continue", lambda span, _: ContinueStatement(span, None))
-return_statement = map(
-    seq("return", opt(ignore(ws), expr)),
-    lambda span, rs: ReturnStatement(span, rs[1]),
-)
+# break_statement = map("break", lambda span, _: BreakStatement(span, None, None))
+# continue_statement = map("continue", lambda span, _: ContinueStatement(span, None))
+# return_statement = map(
+#     seq("return", opt(ignore(ws), expr)),
+#     lambda span, rs: ReturnStatement(span, rs[1]),
+# )
 
-loop = map(
-    seq("loop", ignore(ws), "{", ignore(ws), statements, ignore(ws), "}"),
-    lambda span, rs: Statement(
-        span, StatementTy.Loop, children=rs[4], tokens=[rs[0], rs[2], rs[6]]
-    ),
+loop_expr = starmap(
+    seq("loop", ignore(ws), "{", ignore(ws), statements, ignore(ws), "}"), LoopExpr
 )
 
 semi_optional = not_implemented("autonomous_statement")
-semi_required = alt(break_statement, continue_statement, expr_statment)
+semi_required = alt(expr_statment)
+
 
 @Parser
 def statements_f(s):

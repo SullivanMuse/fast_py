@@ -278,7 +278,10 @@ class LoopExpr(Expr):
         loop { ... }
     """
 
+    loop_token: Span
+    lbrace_token: Span
     statements: list["Statement"]
+    rbrace_token: Span
 
 
 def free(statements, set_=None) -> set[str]:
