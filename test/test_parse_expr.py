@@ -1,4 +1,4 @@
-from parse_expr import *
+from parse import *
 
 
 def test_integer():
@@ -292,6 +292,10 @@ def test_array():
             rbracket=Span(string="[ ...r, y, ]", start=11, stop=12),
         ),
     )
+
+
+def test_fn():
+    pass
 
 
 def test_paren():

@@ -238,7 +238,10 @@ class FnExpr(Expr):
         fn(p0, p1, ...) e0
     """
 
+    fn_token: Span
+    lpar: Span
     params: list["Pattern"]
+    rpar: Span
     inner: Expr
 
 
@@ -329,6 +332,12 @@ class ExprStatement(Statement):
     """
 
     inner: Expr
+
+
+@dataclass
+class FnStatement(Statement):
+    # TODO
+    pass
 
 
 @dataclass

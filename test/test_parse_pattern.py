@@ -1,4 +1,4 @@
-from parse_pattern import *
+from parse import *
 
 
 def test_ignore_pattern():
