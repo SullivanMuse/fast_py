@@ -157,18 +157,139 @@ def test_string():
 
 
 def test_array():
-    s = "[x, y, z]"
-    assert array(s) == Success(
-        Span(s, len(s), len(s)),
-        ArrayExpr(
-            span=Span(s, 0, len(s)),
-            lbracket=Span(s, 0, 1),
+    assert array("[]") == Success(
+        span=Span(string="[]", start=2, stop=2),
+        val=ArrayExpr(
+            span=Span(string="[]", start=0, stop=2),
+            lbracket=Span(string="[]", start=0, stop=1),
+            items=[],
+            rbracket=Span(string="[]", start=1, stop=2),
+        ),
+    )
+
+    assert array("[x]") == Success(
+        span=Span(string="[x]", start=3, stop=3),
+        val=ArrayExpr(
+            span=Span(string="[x]", start=0, stop=3),
+            lbracket=Span(string="[x]", start=0, stop=1),
+            items=[IdExpr(span=Span(string="[x]", start=1, stop=2))],
+            rbracket=Span(string="[x]", start=2, stop=3),
+        ),
+    )
+
+    assert array("[x,]") == Success(
+        span=Span(string="[x,]", start=4, stop=4),
+        val=ArrayExpr(
+            span=Span(string="[x,]", start=0, stop=4),
+            lbracket=Span(string="[x,]", start=0, stop=1),
+            items=[IdExpr(span=Span(string="[x,]", start=1, stop=2))],
+            rbracket=Span(string="[x,]", start=3, stop=4),
+        ),
+    )
+
+    assert array("[x, y]") == Success(
+        span=Span(string="[x, y]", start=6, stop=6),
+        val=ArrayExpr(
+            span=Span(string="[x, y]", start=0, stop=6),
+            lbracket=Span(string="[x, y]", start=0, stop=1),
             items=[
-                IdExpr(Span(s, 1, 2)),
-                IdExpr(Span(s, 4, 5)),
-                IdExpr(Span(s, 7, 8)),
+                IdExpr(span=Span(string="[x, y]", start=1, stop=2)),
+                IdExpr(span=Span(string="[x, y]", start=4, stop=5)),
             ],
-            rbracket=Span(s, len(s) - 1, len(s)),
+            rbracket=Span(string="[x, y]", start=5, stop=6),
+        ),
+    )
+
+    assert array("[x, y, ..r]") == Error(
+        span=Span(string="[x, y, ..r]", start=0, stop=None), reason=None
+    )
+
+    assert array("[x, y, ...r]") == Success(
+        span=Span(string="[x, y, ...r]", start=12, stop=12),
+        val=ArrayExpr(
+            span=Span(string="[x, y, ...r]", start=0, stop=12),
+            lbracket=Span(string="[x, y, ...r]", start=0, stop=1),
+            items=[
+                IdExpr(span=Span(string="[x, y, ...r]", start=1, stop=2)),
+                IdExpr(span=Span(string="[x, y, ...r]", start=4, stop=5)),
+                Spread(
+                    span=Span(string="[x, y, ...r]", start=7, stop=11),
+                    ellipsis=Span(string="[x, y, ...r]", start=7, stop=10),
+                    inner=IdExpr(
+                        span=Span(string="[x, y, " "...r]", start=10, stop=11)
+                    ),
+                ),
+            ],
+            rbracket=Span(string="[x, y, ...r]", start=11, stop=12),
+        ),
+    )
+
+    assert array("[x, ...r,  y]") == Success(
+        span=Span(string="[x, ...r,  y]", start=13, stop=13),
+        val=ArrayExpr(
+            span=Span(string="[x, ...r,  y]", start=0, stop=13),
+            lbracket=Span(string="[x, ...r,  y]", start=0, stop=1),
+            items=[
+                IdExpr(span=Span(string="[x, ...r,  y]", start=1, stop=2)),
+                Spread(
+                    span=Span(string="[x, ...r,  y]", start=4, stop=8),
+                    ellipsis=Span(string="[x, ...r,  y]", start=4, stop=7),
+                    inner=IdExpr(span=Span(string="[x, ...r,  " "y]", start=7, stop=8)),
+                ),
+                IdExpr(span=Span(string="[x, ...r,  y]", start=11, stop=12)),
+            ],
+            rbracket=Span(string="[x, ...r,  y]", start=12, stop=13),
+        ),
+    )
+
+    assert array("[...r,  y]") == Success(
+        span=Span(string="[...r,  y]", start=10, stop=10),
+        val=ArrayExpr(
+            span=Span(string="[...r,  y]", start=0, stop=10),
+            lbracket=Span(string="[...r,  y]", start=0, stop=1),
+            items=[
+                Spread(
+                    span=Span(string="[...r,  y]", start=1, stop=5),
+                    ellipsis=Span(string="[...r,  y]", start=1, stop=4),
+                    inner=IdExpr(span=Span(string="[...r,  y]", start=4, stop=5)),
+                ),
+                IdExpr(span=Span(string="[...r,  y]", start=8, stop=9)),
+            ],
+            rbracket=Span(string="[...r,  y]", start=9, stop=10),
+        ),
+    )
+
+    assert array("[...r, y,]") == Success(
+        span=Span(string="[...r, y,]", start=10, stop=10),
+        val=ArrayExpr(
+            span=Span(string="[...r, y,]", start=0, stop=10),
+            lbracket=Span(string="[...r, y,]", start=0, stop=1),
+            items=[
+                Spread(
+                    span=Span(string="[...r, y,]", start=1, stop=5),
+                    ellipsis=Span(string="[...r, y,]", start=1, stop=4),
+                    inner=IdExpr(span=Span(string="[...r, y,]", start=4, stop=5)),
+                ),
+                IdExpr(span=Span(string="[...r, y,]", start=7, stop=8)),
+            ],
+            rbracket=Span(string="[...r, y,]", start=9, stop=10),
+        ),
+    )
+
+    assert array("[ ...r, y, ]") == Success(
+        span=Span(string="[ ...r, y, ]", start=12, stop=12),
+        val=ArrayExpr(
+            span=Span(string="[ ...r, y, ]", start=0, stop=12),
+            lbracket=Span(string="[ ...r, y, ]", start=0, stop=1),
+            items=[
+                Spread(
+                    span=Span(string="[ ...r, y, ]", start=2, stop=6),
+                    ellipsis=Span(string="[ ...r, y, ]", start=2, stop=5),
+                    inner=IdExpr(span=Span(string="[ ...r, y, " "]", start=5, stop=6)),
+                ),
+                IdExpr(span=Span(string="[ ...r, y, ]", start=8, stop=9)),
+            ],
+            rbracket=Span(string="[ ...r, y, ]", start=11, stop=12),
         ),
     )
 
