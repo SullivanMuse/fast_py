@@ -250,7 +250,7 @@ def starmap(p, f):
 
 
 space = pred(one, lambda s: s.str().isspace())
-ws = many0(space)
+ws = ignore(many0(space))
 
 
 def recurse(f):

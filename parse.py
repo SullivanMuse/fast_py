@@ -88,24 +88,24 @@ string = starmap(
 
 ## array
 array = starmap(
-    seq("[", ignore(ws), expr_list, ignore(ws), "]"),
+    seq("[", ws, expr_list, ws, "]"),
     ArrayExpr,
 )
 
 ## paren
 paren = starmap(seq("(", expr, ")"), ParenExpr)
-spread = starmap(seq("...", ignore(ws), expr), Spread)
+spread = starmap(seq("...", ws, expr), Spread)
 
 fn = starmap(
     seq(
         "fn",
-        ignore(ws),
+        ws,
         "(",
-        ignore(ws),
+        ws,
         sep(pattern, ","),
-        ignore(ws),
+        ws,
         ")",
-        ignore(ws),
+        ws,
         expr,
     ),
     FnExpr,
@@ -122,7 +122,7 @@ expr.f = alt(atom)
 
 ignore_pattern = map(seq("_", opt(name)), lambda span, _: IgnorePattern(span))
 id_pattern = starmap(
-    seq(name, opt(ignore(ws), tag("@"), ignore(ws), pattern)),
+    seq(name, opt(ws, tag("@"), ws, pattern)),
     lambda span, name, rest: (
         IdPattern(span, name) if rest is None else IdPattern(span, name, *rest)
     ),
@@ -139,7 +139,7 @@ gather_pattern = starmap(
 
 @Parser
 def array_pattern_items(s0):
-    sep = map(seq(ignore(ws), ",", ignore(ws)), lambda _, sep: sep)
+    sep = map(seq(ws, ",", ws), lambda _, sep: sep)
     s = s0
 
     items = []
@@ -170,7 +170,7 @@ def array_pattern_items(s0):
 
 
 array_pattern = starmap(
-    seq("[", ignore(ws), array_pattern_items, ignore(ws), "]"),
+    seq("[", ws, array_pattern_items, ws, "]"),
     lambda span, lsq, items, rsq: ArrayPattern(
         span,
         items[0],
@@ -200,7 +200,7 @@ expr_statment = map(seq(expr), lambda span, inner: ExprStatement(span, None, inn
 # break_statement = map("break", lambda span, _: BreakStatement(span, None, None))
 # continue_statement = map("continue", lambda span, _: ContinueStatement(span, None))
 # return_statement = map(
-#     seq("return", opt(ignore(ws), expr)),
+#     seq("return", opt(ws, expr)),
 #     lambda span, rs: ReturnStatement(span, rs[1]),
 # )
 
@@ -215,7 +215,7 @@ semi_required = alt(expr_statment)
 @Parser
 def statements_f(s):
     results = []
-    sep = seq(ignore(ws), ";")
+    sep = seq(ws, ";")
 
     while True:
         # Get span without leading whitespace
