@@ -28,6 +28,9 @@ def test_id_pattern():
     )
     assert id_pattern(s) == Success(Span(s, len(s), len(s)), node), "Success"
 
+    s = "123"
+    assert id_pattern(s) == Error(Span(s, 0, None)), "Error"
+
     s = ""
     assert id_pattern(s) == Error(Span(s, 0, None)), "Error"
 

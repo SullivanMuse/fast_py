@@ -36,6 +36,9 @@ def test_id():
     s = "123"
     assert id(s) == Error(Span(s, 0, None)), "Error"
 
+    s = ""
+    assert id(s) == Error(Span(s, 0, None)), "Error"
+
 
 def test_string():
     s = '"asdf\\""'
