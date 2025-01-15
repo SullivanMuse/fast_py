@@ -111,7 +111,7 @@ fn = starmap(
 )
 
 atom.f = alt(integer, floating, string, id, tag_expr, array, paren, spread)
-expr.f = atom
+expr.f = alt(atom, fn)
 
 #
 # pattern
