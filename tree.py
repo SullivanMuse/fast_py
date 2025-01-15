@@ -113,7 +113,13 @@ class StringExpr(Expr):
     """
 
     fn: Optional[Span]
-    items: list[str | Expr]
+
+    # >= 1
+    chars: list[str]
+
+    # len = len(chars) - 1
+    interpolants: list[Expr]
+
     lquote: Span
     rquote: Span
 

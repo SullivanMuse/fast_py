@@ -49,21 +49,33 @@ name = map(
 id = map(name, lambda span, _: IdExpr(span))
 tag_expr = map(seq(ignore(":"), name), lambda span, name: TagExpr(span, name))
 
+
 ## string
+def unzip(xys):
+    xs = []
+    ys = []
+    for i, item in enumerate(xys):
+        if i % 2 == 0:
+            xs.append(item)
+        else:
+            ys.append(item)
+    return xs, ys
+
+
 escape = seq("\\", alt("\\", '"', "{", "}"))
 forbidden = set(r"\"{}")
 regular = pred(one, lambda s: s.str() not in forbidden)
 interpolant = map(seq(ignore("{"), expr, ignore("}")), lambda _, item: item)
 piece = map(many0(alt(regular, escape)), lambda span, _: span)
-string_impl = seq('"', many0(piece, interpolant), piece, '"')
+string_impl = seq(opt(id), '"', many0(piece, interpolant), piece, '"')
 string = starmap(
     string_impl,
-    lambda span, lquote, pieces, piece, rquote: StringExpr(
+    lambda span, fn, lquote, pieces, piece, rquote: StringExpr(
         span,
-        fn=None,
-        items=[*pieces, piece],
-        lquote=lquote,
-        rquote=rquote,
+        fn,
+        *unzip([*[item for sublist in pieces for item in sublist], piece]),
+        lquote,
+        rquote,
     ),
 )
 
