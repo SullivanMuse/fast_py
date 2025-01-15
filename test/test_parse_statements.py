@@ -1,4 +1,4 @@
-from parse_statements import *
+from parse import *
 
 
 def test_break_statement():
