@@ -110,7 +110,12 @@ fn = starmap(
     ),
     FnExpr,
 )
-block = starmap(seq("{", ignore(ws), statements, ignore(ws), "}"), BlockExpr)
+block = starmap(seq("{", ws, statements, ws, "}"), BlockExpr)
+
+
+loop_expr = starmap(
+    seq("loop", ws, "{", ws, statements, ws, "}"), LoopExpr
+)
 
 atom.f = alt(integer, floating, string, id, tag_expr, array, paren, spread, block, fn)
 
@@ -203,10 +208,6 @@ expr_statment = map(seq(expr), lambda span, inner: ExprStatement(span, None, inn
 #     seq("return", opt(ws, expr)),
 #     lambda span, rs: ReturnStatement(span, rs[1]),
 # )
-
-loop_expr = starmap(
-    seq("loop", ignore(ws), "{", ignore(ws), statements, ignore(ws), "}"), LoopExpr
-)
 
 semi_optional = not_implemented("autonomous_statement")
 semi_required = alt(expr_statment)
