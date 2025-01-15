@@ -2,12 +2,30 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from errors import CompileError
-from instr import (ArrayExtend, ArrayPush, Call, ClosureNew, Jump, Loc, Pop,
-                   Push, Ref)
-from tree import (ArrayExpr, BinaryExpr, BlockExpr, CallExpr, ComparisonExpr,
-                  Expr, ExprStatement, FloatExpr, FnExpr, IdExpr, IndexExpr,
-                  IntExpr, LoopExpr, MatchExpr, ParenExpr, Spread, Statement,
-                  StringExpr, SyntaxNode, TagExpr, UnaryExpr)
+from instr import ArrayExtend, ArrayPush, Call, ClosureNew, Jump, Loc, Pop, Push, Ref
+from tree import (
+    ArrayExpr,
+    BinaryExpr,
+    BlockExpr,
+    CallExpr,
+    ComparisonExpr,
+    Expr,
+    ExprStatement,
+    FloatExpr,
+    FnExpr,
+    IdExpr,
+    IndexExpr,
+    IntExpr,
+    LoopExpr,
+    MatchExpr,
+    ParenExpr,
+    Spread,
+    Statement,
+    StringExpr,
+    SyntaxNode,
+    TagExpr,
+    UnaryExpr,
+)
 from value import *
 
 
@@ -80,7 +98,9 @@ class Compiler:
                 return self.compile_expr(inner)
 
             case _:
-                raise NotImplementedError(f"`Compiler.compile_statement({type(statement).__name__})`")
+                raise NotImplementedError(
+                    f"`Compiler.compile_statement({type(statement).__name__})`"
+                )
 
     def compile_statements(self, statements: list[Statement]) -> int:
         self.scope = Scope(self.scope)

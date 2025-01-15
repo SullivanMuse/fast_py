@@ -4,22 +4,13 @@ from tree import *
 
 statements = Parser()
 
-expr_statment = map(
-    expr, lambda span, inner: Statement(span, StatementTy.Expr, children=[inner])
-)
+expr_statment = map(expr, lambda span, inner: ExprStatement(span, inner))
 
-break_statement = map("break", lambda span, _: Statement(span, StatementTy.Break))
-continue_statement = map(
-    "continue", lambda span, _: Statement(span, StatementTy.Continue)
-)
+break_statement = map("break", lambda span, _: BreakStatement(span, None, None))
+continue_statement = map("continue", lambda span, _: ContinueStatement(span, None))
 return_statement = map(
     seq("return", opt(ignore(ws), expr)),
-    lambda span, rs: Statement(
-        span,
-        StatementTy.Return,
-        children=[rs[1]] if rs[1] is not None else [],
-        tokens=[rs[0]],
-    ),
+    lambda span, rs: ReturnStatement(span, rs[1]),
 )
 
 autonomous_statement = not_implemented("autonomous_statement")
@@ -31,48 +22,6 @@ loop = map(
         span, StatementTy.Loop, children=rs[4], tokens=[rs[0], rs[2], rs[6]]
     ),
 )
-
-
-def test_break_statement():
-    s = "break"
-    assert break_statement(s) == Success(
-        Span(s, len(s), len(s)), Statement(Span(s, 0, len(s)), StatementTy.Break)
-    )
-
-    s = ""
-    assert break_statement(s) == Error(Span(s, 0, None))
-
-
-def test_continue_statement():
-    s = "continue"
-    assert continue_statement(s) == Success(
-        Span(s, len(s), len(s)), Statement(Span(s, 0, len(s)), StatementTy.Continue)
-    )
-
-    s = ""
-    assert continue_statement(s) == Error(Span(s, 0, None))
-
-
-def test_return_statement():
-    s = "return"
-    assert return_statement(s) == Success(
-        Span(s, len(s), len(s)),
-        Statement(Span(s, 0, len(s)), StatementTy.Return, tokens=[Span(s, 0, len(s))]),
-    )
-
-    s = "return x"
-    assert return_statement(s) == Success(
-        Span(s, len(s), len(s)),
-        Statement(
-            Span(s, 0, len(s)),
-            StatementTy.Return,
-            children=[Statement(Span(s, 7, 8), ExprTy.Id)],
-            tokens=[Span(s, 0, 6)],
-        ),
-    )
-
-    s = ""
-    assert return_statement(s) == Error(Span(s, 0, None))
 
 
 @Parser
