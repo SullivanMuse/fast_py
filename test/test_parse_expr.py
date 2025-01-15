@@ -484,14 +484,24 @@ def test_block():
         ),
     )
 
-    # {x;y}
-    # {x;y;}
-    # { x ; y ; }
+    s = "{x;y}"
+    assert block(s)
+
+    s = "{x;y;}"
+    assert block(s)
+
+    s = "{ x ; y ; }"
+    assert block(s)
 
     # errors
-    # ""
-    # {;}
-    # {;x}
+    s = ""
+    assert not block(s)
+
+    s = "{;}"
+    assert not block(s)
+
+    s = "{;x}"
+    assert not block(s)
 
 
 def test_paren():
