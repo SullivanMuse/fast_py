@@ -4,14 +4,19 @@ from tree import *
 
 pattern = Parser()
 
-ignore_pattern = map(seq("_", name), lambda span, _: IgnorePattern(span))
-id_pattern = map(name, lambda span, _: IdPattern(span, span))
+ignore_pattern = map(seq("_", opt(name)), lambda span, _: IgnorePattern(span))
+id_pattern = starmap(
+    seq(name, opt(ignore(ws), tag("@"), ignore(ws), pattern)),
+    lambda span, name, rest: (
+        IdPattern(span, name) if rest is None else IdPattern(span, name, *rest)
+    ),
+)
 tag_pattern = map(seq(ignore(":"), name), lambda span, _: TagPattern(span))
 integer_pattern = map(dec_run, lambda span, _: IntPattern(span))
 float_pattern = not_implemented("float_pattern")
 string_pattern = not_implemented("string_pattern")
 gather_pattern = starmap(
-    seq("..", opt(pattern)),
+    seq("...", opt(pattern)),
     GatherPattern,
 )
 

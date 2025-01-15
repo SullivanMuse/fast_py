@@ -468,6 +468,7 @@ class IdPattern(Pattern):
     """
 
     name: Span
+    at_token: Optional[Span] = None
     inner: Optional[Pattern] = None
 
 

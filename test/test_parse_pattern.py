@@ -6,6 +6,10 @@ def test_ignore_pattern():
     node = IgnorePattern(Span(s, 0, len(s)))
     assert ignore_pattern(s) == Success(Span(s, len(s), len(s)), node), "Success"
 
+    s = "_"
+    node = IgnorePattern(Span(s, 0, len(s)))
+    assert ignore_pattern(s) == Success(Span(s, len(s), len(s)), node), "Success"
+
     s = ""
     assert ignore_pattern(s) == Error(Span(s, 0, None)), "Error"
 
@@ -13,6 +17,15 @@ def test_ignore_pattern():
 def test_id_pattern():
     s = "asdf"
     node = IdPattern(Span(s, 0, len(s)), Span(s, 0, len(s)))
+    assert id_pattern(s) == Success(Span(s, len(s), len(s)), node), "Success"
+
+    s = "asdf @ blah"
+    node = IdPattern(
+        Span(s, 0, len(s)),
+        Span(s, 0, 4),
+        Span(s, 5, 6),
+        IdPattern(Span(s, 7, len(s)), Span(s, 7, len(s))),
+    )
     assert id_pattern(s) == Success(Span(s, len(s), len(s)), node), "Success"
 
     s = ""
@@ -33,24 +46,43 @@ def test_integer_pattern():
     node = IntPattern(Span(s, 0, len(s)))
     assert integer_pattern(s) == Success(Span(s, len(s), len(s)), node), "Success"
 
+    s = ":"
+    assert integer_pattern(s) == Error(Span(s, 0, None)), "Error"
+
     s = ""
     assert integer_pattern(s) == Error(Span(s, 0, None)), "Error"
 
 
 def test_gather():
-    s = "..x"
+    s = "...x"
     assert gather_pattern(s) == Success(
         Span(s, len(s), len(s)),
         GatherPattern(
             span=Span(s, 0, len(s)),
-            ellipsis=Span(s, 0, 2),
-            inner=IdPattern(Span(s, 2, 3), Span(s, 2, 3)),
+            ellipsis=Span(s, 0, 3),
+            inner=IdPattern(Span(s, 3, 4), Span(s, 3, 4)),
         ),
     )
 
+    s = "..."
+    assert gather_pattern(s) == Success(
+        Span(s, len(s), len(s)),
+        GatherPattern(
+            span=Span(s, 0, len(s)),
+            ellipsis=Span(s, 0, len(s)),
+            inner=None,
+        ),
+    )
+
+    s = ".."
+    assert gather_pattern(s) == Error(Span(s, 0, None)), "Error"
+
+    s = ""
+    assert gather_pattern(s) == Error(Span(s, 0, None)), "Error"
+
 
 def test_array_pattern():
-    s = "[1, 2, ..r, 4]"
+    s = "[1, 2, ...r, 4]"
     assert array_pattern(s) == Success(
         Span(s, len(s), len(s)),
         ArrayPattern(
@@ -59,19 +91,19 @@ def test_array_pattern():
                 IntPattern(Span(s, 1, 2)),
                 IntPattern(Span(s, 4, 5)),
                 GatherPattern(
-                    span=Span(s, 7, 10),
-                    ellipsis=Span(s, 7, 9),
-                    inner=IdPattern(Span(s, 9, 10), Span(s, 9, 10)),
+                    span=Span(s, 7, 11),
+                    ellipsis=Span(s, 7, 10),
+                    inner=IdPattern(Span(s, 10, 11), Span(s, 10, 11)),
                 ),
-                IntPattern(Span(s, 12, 13)),
+                IntPattern(Span(s, 13, 14)),
             ],
             lsq=Span(s, 0, 1),
             commas=[
                 Span(s, 2, 3),
                 Span(s, 5, 6),
-                Span(s, 10, 11),
+                Span(s, 11, 12),
             ],
-            rsq=Span(s, 13, 14),
+            rsq=Span(s, 14, 15),
         ),
     )
 
@@ -87,7 +119,7 @@ def test_array_pattern():
         ),
     )
 
-    s = "[..r]"
+    s = "[...r]"
     assert array_pattern(s) == Success(
         Span(s, len(s), len(s)),
         ArrayPattern(
@@ -95,7 +127,7 @@ def test_array_pattern():
             items=[
                 GatherPattern(
                     span=Span(s, 1, len(s) - 1),
-                    ellipsis=Span(s, 1, 3),
+                    ellipsis=Span(s, 1, 4),
                     inner=IdPattern(
                         Span(s, len(s) - 2, len(s) - 1), Span(s, len(s) - 2, len(s) - 1)
                     ),
@@ -107,7 +139,7 @@ def test_array_pattern():
         ),
     )
 
-    s = "[a, ..r]"
+    s = "[a, ...r]"
     assert array_pattern(s) == Success(
         Span(s, len(s), len(s)),
         ArrayPattern(
@@ -115,8 +147,8 @@ def test_array_pattern():
             items=[
                 IdPattern(Span(s, 1, 2), Span(s, 1, 2)),
                 GatherPattern(
-                    span=Span(s, len(s) - 4, len(s) - 1),
-                    ellipsis=Span(s, len(s) - 4, len(s) - 2),
+                    span=Span(s, len(s) - 5, len(s) - 1),
+                    ellipsis=Span(s, len(s) - 5, len(s) - 2),
                     inner=IdPattern(
                         Span(s, len(s) - 2, len(s) - 1), Span(s, len(s) - 2, len(s) - 1)
                     ),
@@ -128,21 +160,21 @@ def test_array_pattern():
         ),
     )
 
-    s = "[..r, a]"
+    s = "[...r, a]"
     assert array_pattern(s) == Success(
         Span(s, len(s), len(s)),
         ArrayPattern(
             span=Span(s, 0, len(s)),
             items=[
                 GatherPattern(
-                    span=Span(s, 1, 4),
-                    ellipsis=Span(s, 1, 3),
-                    inner=IdPattern(Span(s, 3, 4), Span(s, 3, 4)),
+                    span=Span(s, 1, 5),
+                    ellipsis=Span(s, 1, 4),
+                    inner=IdPattern(Span(s, 4, 5), Span(s, 4, 5)),
                 ),
-                IdPattern(Span(s, 6, 7), Span(s, 6, 7)),
+                IdPattern(Span(s, 7, 8), Span(s, 7, 8)),
             ],
             lsq=Span(s, 0, 1),
-            commas=[Span(s, 4, 5)],
+            commas=[Span(s, 5, 6)],
             rsq=Span(s, len(s) - 1, len(s)),
         ),
     )
