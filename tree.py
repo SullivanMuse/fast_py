@@ -90,7 +90,7 @@ class TagExpr(Expr):
         :a
     """
 
-    name: Span
+    pass
 
 
 @dataclass
@@ -253,7 +253,9 @@ class BlockExpr(Expr):
         { s0, s1, ... }
     """
 
+    lbrace: Span
     statements: list["Statement"]
+    rbrace: Span
 
 
 @dataclass
@@ -320,7 +322,7 @@ def free(statements, set_=None) -> set[str]:
 
 @dataclass
 class Statement(SyntaxNode):
-    pass
+    semi_token: Optional[Span]
 
 
 @dataclass
@@ -336,8 +338,16 @@ class ExprStatement(Statement):
 
 @dataclass
 class FnStatement(Statement):
-    # TODO
-    pass
+    name: Span
+    params: list["Pattern"]
+    body: list[Statement]
+
+    # tokens
+    fn_token: Span
+    lpar_token: Span
+    rpar_token: Span
+    lbrace_token: Span
+    rbrace_token: Span
 
 
 @dataclass
@@ -351,6 +361,10 @@ class LetStatement(Statement):
     pattern: "Pattern"
     inner: Expr
 
+    # tokens
+    let_token: Span
+    eq_token: Span
+
 
 @dataclass
 class AssignStatement(Statement):
@@ -363,6 +377,8 @@ class AssignStatement(Statement):
     pattern: "Pattern"
     inner: Expr
 
+    eq_token: Span
+
 
 @dataclass
 class LoopStatement(Statement):
@@ -372,7 +388,7 @@ class LoopStatement(Statement):
         loop { ... }
     """
 
-    statements: list[Statement]
+    loop_expr: LoopExpr
 
 
 @dataclass
@@ -383,8 +399,7 @@ class MatchStatement(Statement):
         match subject { arm... }
     """
 
-    subject: Expr
-    arms: list[tuple["Pattern", Expr]]
+    match_expr: MatchExpr
 
 
 @dataclass
