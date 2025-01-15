@@ -195,7 +195,7 @@ pattern.f = alt(
 # statements
 #
 
-expr_statment = map(expr, lambda span, inner: ExprStatement(span, inner))
+expr_statment = map(seq(expr), lambda span, inner: ExprStatement(span, None, inner))
 
 break_statement = map("break", lambda span, _: BreakStatement(span, None, None))
 continue_statement = map("continue", lambda span, _: ContinueStatement(span, None))
@@ -204,9 +204,6 @@ return_statement = map(
     lambda span, rs: ReturnStatement(span, rs[1]),
 )
 
-autonomous_statement = not_implemented("autonomous_statement")
-semi_statement = alt(break_statement, continue_statement, expr_statment)
-
 loop = map(
     seq("loop", ignore(ws), "{", ignore(ws), statements, ignore(ws), "}"),
     lambda span, rs: Statement(
@@ -214,33 +211,35 @@ loop = map(
     ),
 )
 
+semi_optional = not_implemented("autonomous_statement")
+semi_required = alt(break_statement, continue_statement, expr_statment)
 
 @Parser
-def statements_f(s0):
-    s = s0
-
-    statements_list = []
-    tokens = []
-    sep = seq(ignore(ws), ";", ignore(ws))
+def statements_f(s):
+    results = []
+    sep = seq(ignore(ws), ";")
 
     while True:
-        # Semicolon not required
-        if r := autonomous_statement(s):
-            s = r.span
-            statements_list.append(r.val)
+        # Get span without leading whitespace
+        s1 = ws(s).span
 
-            if r := sep(s):
-                tokens.append(r.val[0])
-                s = r.span
+        # Semicolon not required
+        if r1 := semi_optional(s1):
+            s = r1.span
+            results.append(r1.val)
+
+            if r2 := sep(s):
+                r1.val.semi_token = r2.val
+                s = r2.span
 
         # Semicolon required
-        elif r := semi_statement(s):
-            s = r.span
-            statements_list.append(r.val)
+        elif r1 := semi_required(s1):
+            s = r1.span
+            results.append(r1.val)
 
-            if r := sep(s):
-                tokens.append(r.val[0])
-                s = r.span
+            if r2 := sep(s):
+                r1.val.semi_token = r2.val
+                s = r2.span
             else:
                 break
 
@@ -248,7 +247,7 @@ def statements_f(s0):
         else:
             break
 
-    return Success(s, statements_list)
+    return Success(s, results)
 
 
 statements.f = statements_f
