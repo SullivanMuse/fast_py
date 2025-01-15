@@ -295,7 +295,145 @@ def test_array():
 
 
 def test_fn():
-    pass
+    assert fn("fn() x") == Success(
+        span=Span(string="fn() x", start=6, stop=6),
+        val=FnExpr(
+            span=Span(string="fn() x", start=0, stop=6),
+            fn_token=Span(string="fn() x", start=0, stop=2),
+            lpar=Span(string="fn() x", start=2, stop=3),
+            params=[],
+            rpar=Span(string="fn() x", start=3, stop=4),
+            inner=IdExpr(span=Span(string="fn() x", start=5, stop=6)),
+        ),
+    )
+
+    assert fn("fn(x) x") == Success(
+        span=Span(string="fn(x) x", start=7, stop=7),
+        val=FnExpr(
+            span=Span(string="fn(x) x", start=0, stop=7),
+            fn_token=Span(string="fn(x) x", start=0, stop=2),
+            lpar=Span(string="fn(x) x", start=2, stop=3),
+            params=[
+                IdPattern(
+                    span=Span(string="fn(x) x", start=3, stop=4),
+                    name=Span(string="fn(x) x", start=3, stop=4),
+                    at_token=None,
+                    inner=None,
+                )
+            ],
+            rpar=Span(string="fn(x) x", start=4, stop=5),
+            inner=IdExpr(span=Span(string="fn(x) x", start=6, stop=7)),
+        ),
+    )
+
+    assert fn("fn(x,) x") == Success(
+        span=Span(string="fn(x,) x", start=8, stop=8),
+        val=FnExpr(
+            span=Span(string="fn(x,) x", start=0, stop=8),
+            fn_token=Span(string="fn(x,) x", start=0, stop=2),
+            lpar=Span(string="fn(x,) x", start=2, stop=3),
+            params=[
+                IdPattern(
+                    span=Span(string="fn(x,) x", start=3, stop=4),
+                    name=Span(string="fn(x,) x", start=3, stop=4),
+                    at_token=None,
+                    inner=None,
+                )
+            ],
+            rpar=Span(string="fn(x,) x", start=5, stop=6),
+            inner=IdExpr(span=Span(string="fn(x,) x", start=7, stop=8)),
+        ),
+    )
+
+    assert fn("fn(x,y) x") == Success(
+        span=Span(string="fn(x,y) x", start=9, stop=9),
+        val=FnExpr(
+            span=Span(string="fn(x,y) x", start=0, stop=9),
+            fn_token=Span(string="fn(x,y) x", start=0, stop=2),
+            lpar=Span(string="fn(x,y) x", start=2, stop=3),
+            params=[
+                IdPattern(
+                    span=Span(string="fn(x,y) x", start=3, stop=4),
+                    name=Span(string="fn(x,y) x", start=3, stop=4),
+                    at_token=None,
+                    inner=None,
+                ),
+                IdPattern(
+                    span=Span(string="fn(x,y) x", start=5, stop=6),
+                    name=Span(string="fn(x,y) x", start=5, stop=6),
+                    at_token=None,
+                    inner=None,
+                ),
+            ],
+            rpar=Span(string="fn(x,y) x", start=6, stop=7),
+            inner=IdExpr(span=Span(string="fn(x,y) x", start=8, stop=9)),
+        ),
+    )
+
+    assert fn("fn(x,y,) x") == Success(
+        span=Span(string="fn(x,y,) x", start=10, stop=10),
+        val=FnExpr(
+            span=Span(string="fn(x,y,) x", start=0, stop=10),
+            fn_token=Span(string="fn(x,y,) x", start=0, stop=2),
+            lpar=Span(string="fn(x,y,) x", start=2, stop=3),
+            params=[
+                IdPattern(
+                    span=Span(string="fn(x,y,) x", start=3, stop=4),
+                    name=Span(string="fn(x,y,) x", start=3, stop=4),
+                    at_token=None,
+                    inner=None,
+                ),
+                IdPattern(
+                    span=Span(string="fn(x,y,) x", start=5, stop=6),
+                    name=Span(string="fn(x,y,) x", start=5, stop=6),
+                    at_token=None,
+                    inner=None,
+                ),
+            ],
+            rpar=Span(string="fn(x,y,) x", start=7, stop=8),
+            inner=IdExpr(span=Span(string="fn(x,y,) x", start=9, stop=10)),
+        ),
+    )
+
+    assert fn("fn( x , y , ) x") == Success(
+        span=Span(string="fn( x , y , ) x", start=15, stop=15),
+        val=FnExpr(
+            span=Span(string="fn( x , y , ) x", start=0, stop=15),
+            fn_token=Span(string="fn( x , y , ) x", start=0, stop=2),
+            lpar=Span(string="fn( x , y , ) x", start=2, stop=3),
+            params=[
+                IdPattern(
+                    span=Span(string="fn( x , y , ) x", start=4, stop=5),
+                    name=Span(string="fn( x , y , ) x", start=4, stop=5),
+                    at_token=None,
+                    inner=None,
+                ),
+                IdPattern(
+                    span=Span(string="fn( x , y , ) x", start=8, stop=9),
+                    name=Span(string="fn( x , y , ) x", start=8, stop=9),
+                    at_token=None,
+                    inner=None,
+                ),
+            ],
+            rpar=Span(string="fn( x , y , ) x", start=12, stop=13),
+            inner=IdExpr(span=Span(string="fn( x , y , ) x", start=14, stop=15)),
+        ),
+    )
+
+    # errors:
+    assert fn("") == Error(span=Span(string="", start=0, stop=None), reason=None)
+
+    assert fn("fn()") == Error(
+        span=Span(string="fn()", start=0, stop=None), reason=None
+    )
+
+    assert fn("fn(,)") == Error(
+        span=Span(string="fn(,)", start=0, stop=None), reason=None
+    )
+
+    assert fn("fn(,x)") == Error(
+        span=Span(string="fn(,x)", start=0, stop=None), reason=None
+    )
 
 
 def test_paren():

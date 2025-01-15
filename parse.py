@@ -95,7 +95,20 @@ array = starmap(
 paren = starmap(seq("(", expr, ")"), ParenExpr)
 spread = starmap(seq("...", ignore(ws), expr), Spread)
 
-fn = starmap(seq("fn", ignore(ws), "(", ignore(ws), sep(pattern, ","), ignore(ws), ")", ignore(ws), expr), FnExpr)
+fn = starmap(
+    seq(
+        "fn",
+        ignore(ws),
+        "(",
+        ignore(ws),
+        sep(pattern, ","),
+        ignore(ws),
+        ")",
+        ignore(ws),
+        expr,
+    ),
+    FnExpr,
+)
 
 atom.f = alt(integer, floating, string, id, tag_expr, array, paren, spread)
 expr.f = atom
