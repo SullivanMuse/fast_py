@@ -88,4 +88,15 @@ class Assert(Instr):
     reason: str
 
 
+@dataclass
+class IsType(Instr):
+    ty: type
+
+
+@dataclass
+class Index(Instr):
+    array: Ref
+    ix: Ref
+
+
 Instr.get_children()
