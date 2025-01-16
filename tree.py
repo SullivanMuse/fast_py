@@ -344,15 +344,15 @@ class ExprStatement(Statement):
 
 @dataclass
 class FnStatement(Statement):
-    name: Span
-    params: list["Pattern"]
-    body: list[Statement]
-
-    # tokens
     fn_token: Span
+    name: Span
+
     lpar_token: Span
+    params: list["Pattern"]
     rpar_token: Span
+
     lbrace_token: Span
+    body: list[Statement]
     rbrace_token: Span
 
 
@@ -416,6 +416,7 @@ class BreakStatement(Statement):
         break ['label] [e]
     """
 
+    break_token: Span
     label: Optional[Span]
     inner: Optional[Expr]
 
@@ -428,6 +429,7 @@ class ContinueStatement(Statement):
         continue ['label]
     """
 
+    continue_token: Span
     label: Optional[Span]
 
 

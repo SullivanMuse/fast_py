@@ -6,29 +6,9 @@ expr = Parser()
 pattern = Parser()
 
 #
-# expr
+# common
 #
 
-expr_list = sep(expr, ",")
-
-# atom
-atom = Parser()
-
-## integer
-dec_digits = many1(digit)
-dec_run = map(seq(dec_digits, many0("_", dec_digits)), lambda span, _: span)
-integer = map(dec_run, lambda span, _: IntExpr(span))
-
-## float
-fraction = map(seq(".", dec_run), lambda span, _: span)
-exponent = map(seq("e", opt("-"), dec_run), lambda span, _: span)
-s = seq(dec_run, opt(fraction), opt(exponent))
-floating = map(
-    pred(s, lambda x: not (x[1] is None or x[2] is None)),
-    lambda span, _: FloatExpr(span),
-)
-
-## id
 keywords = alt(
     "if",
     "else",
@@ -53,6 +33,32 @@ keywords = alt(
 name = map(
     seq(neg(keywords), many1(alpha), many0("_", many1(alnum))), lambda span, _: span
 )
+label = map(seq("'", name), lambda span, _: span)
+
+#
+# expr
+#
+
+expr_list = sep(expr, ",")
+
+# atom
+atom = Parser()
+
+## integer
+dec_digits = many1(digit)
+dec_run = map(seq(dec_digits, many0("_", dec_digits)), lambda span, _: span)
+integer = map(dec_run, lambda span, _: IntExpr(span))
+
+## float
+fraction = map(seq(".", dec_run), lambda span, _: span)
+exponent = map(seq("e", opt("-"), dec_run), lambda span, _: span)
+s = seq(dec_run, opt(fraction), opt(exponent))
+floating = map(
+    pred(s, lambda x: not (x[1] is None or x[2] is None)),
+    lambda span, _: FloatExpr(span),
+)
+
+## id
 id = map(name, lambda span, _: IdExpr(span))
 tag_expr = map(seq(ignore(":"), name), lambda span, _: TagExpr(span))
 
@@ -115,9 +121,7 @@ fn = starmap(
 block = starmap(seq("{", ws, statements, ws, "}"), BlockExpr)
 
 
-loop_expr = starmap(
-    seq("loop", ws, "{", ws, statements, ws, "}"), LoopExpr
-)
+loop_expr = starmap(seq("loop", ws, "{", ws, statements, ws, "}"), LoopExpr)
 
 atom.f = alt(integer, floating, string, id, tag_expr, array, paren, spread, block, fn)
 
@@ -202,19 +206,55 @@ pattern.f = alt(
 # statements
 #
 
+# semi optional
+loop_statement = map(loop_expr, lambda span, inner: LoopStatement(span, None, inner))
+fn_statement = starmap(
+    seq(
+        "fn",
+        ws,
+        name,
+        ws,
+        "(",
+        ws,
+        sep(pattern, ","),
+        ws,
+        ")",
+        ws,
+        "{",
+        ws,
+        statements,
+        ws,
+        "}",
+    ),
+    lambda span, *rest: FnStatement(span, None, *rest),
+)
+
+# semi required
 expr_statement = map(seq(expr), lambda span, inner: ExprStatement(span, None, inner))
+return_statement = map(
+    seq("return", opt(ws, expr)),
+    lambda span, inner: ReturnStatement(span, None, inner[1]),
+)
+continue_statement = starmap(
+    seq("continue", opt(ws, label)),
+    lambda span, continue_token, label: ContinueStatement(
+        span, None, continue_token, label
+    ),
+)
+break_statement = starmap(
+    seq("break", opt(ws, label), opt(ws, expr)),
+    lambda span, continue_token, label, inner: BreakStatement(
+        span, None, continue_token, label, inner
+    ),
+)
 
-return_statement = map(seq("return", opt(ws, expr)), lambda span, inner: ReturnStatement(span, None, inner[1]))
-
-# break_statement = map("break", lambda span, _: BreakStatement(span, None, None))
-# continue_statement = map("continue", lambda span, _: ContinueStatement(span, None))
-# return_statement = map(
-#     seq("return", opt(ws, expr)),
-#     lambda span, rs: ReturnStatement(span, rs[1]),
-# )
-
-semi_optional = not_implemented("autonomous_statement")
-semi_required = alt(expr_statement, return_statement)
+semi_optional = alt(
+    fn_statement,
+    loop_statement,
+)
+semi_required = alt(
+    expr_statement, return_statement, continue_statement, break_statement
+)
 
 
 @Parser
