@@ -53,7 +53,7 @@ integer = map(dec_run, lambda span, _: IntExpr(span))
 fraction = map(seq(".", dec_run), lambda span, _: span)
 exponent = map(seq("e", opt("-"), dec_run), lambda span, _: span)
 s = seq(dec_run, opt(fraction), opt(exponent))
-floating = map(
+float_expr = map(
     pred(s, lambda x: not (x[1] is None or x[2] is None)),
     lambda span, _: FloatExpr(span),
 )
@@ -123,7 +123,7 @@ block = starmap(seq("{", ws, statements, ws, "}"), BlockExpr)
 
 loop_expr = starmap(seq("loop", ws, "{", ws, statements, ws, "}"), LoopExpr)
 
-atom.f = alt(integer, floating, string, id, tag_expr, array, paren, spread, block, fn)
+atom.f = alt(integer, float_expr, string, id, tag_expr, array, paren, spread, block, fn)
 
 expr.f = alt(atom)
 
@@ -140,8 +140,17 @@ id_pattern = starmap(
 )
 tag_pattern = map(seq(ignore(":"), name), lambda span, _: TagPattern(span))
 integer_pattern = map(dec_run, lambda span, _: IntPattern(span))
-float_pattern = not_implemented("float_pattern")
-string_pattern = not_implemented("string_pattern")
+float_pattern = map(
+    pred(s, lambda x: not (x[1] is None or x[2] is None)),
+    lambda span, _: FloatPattern(span),
+)
+
+string_pattern_impl = seq('"', piece, '"')
+string_pattern = starmap(
+    string_pattern_impl,
+    StringPattern,
+)
+
 gather_pattern = starmap(
     seq("...", opt(pattern)),
     GatherPattern,
@@ -231,7 +240,7 @@ fn_statement = starmap(
 
 # semi required
 expr_statement = map(seq(expr), lambda span, inner: ExprStatement(span, None, inner))
-return_statement = map(
+return_statement = starmap(
     seq("return", opt(ws, expr)),
     lambda span, *rest: ReturnStatement(span, None, *rest),
 )

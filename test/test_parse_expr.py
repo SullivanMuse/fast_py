@@ -13,10 +13,10 @@ def test_integer():
 def test_float():
     s = "123.456e789"
     node = FloatExpr(Span(s, 0, len(s)))
-    assert floating(s) == Success(Span(s, len(s), len(s)), node), "Success"
+    assert float_expr(s) == Success(Span(s, len(s), len(s)), node), "Success"
 
     s = "123"
-    assert floating(s) == Error(Span(s, 0, None)), "Error"
+    assert float_expr(s) == Error(Span(s, 0, None)), "Error"
 
 
 def test_tag_expr():

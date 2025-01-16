@@ -56,6 +56,20 @@ def test_integer_pattern():
     assert integer_pattern(s) == Error(Span(s, 0, None)), "Error"
 
 
+def test_float_pattern():
+    s = "123.456e789"
+    node = FloatPattern(Span(s, 0, len(s)))
+    assert float_pattern(s) == Success(Span(s, len(s), len(s)), node), "Success"
+
+    s = "123"
+    assert float_pattern(s) == Error(Span(s, 0, None)), "Error"
+
+
+def test_string_pattern():
+    s = '"asdf\\""'
+    assert string_pattern(s)
+
+
 def test_gather():
     s = "...x"
     assert gather_pattern(s) == Success(

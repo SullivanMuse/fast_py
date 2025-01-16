@@ -552,7 +552,9 @@ class StringPattern(Pattern):
         "Hello"
     """
 
-    pass
+    lquote_token: Span
+    piece: Span
+    rquote_token: Span
 
 
 @dataclass
