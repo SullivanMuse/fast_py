@@ -82,4 +82,10 @@ class Pop(Instr):
     pass
 
 
+@dataclass
+class Assert(Instr):
+    value: Ref
+    reason: str
+
+
 Instr.get_children()

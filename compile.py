@@ -2,7 +2,8 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from errors import CompileError
-from instr import ArrayExtend, ArrayPush, Call, ClosureNew, Jump, Loc, Pop, Push, Ref
+from instr import ArrayExtend, ArrayPush, Assert, Call, ClosureNew, Jump, Loc, Pop, Push, Ref
+from parse import statements
 from tree import (
     ArrayExpr,
     BinaryExpr,
@@ -16,9 +17,11 @@ from tree import (
     IdExpr,
     IndexExpr,
     IntExpr,
+    LetStatement,
     LoopExpr,
     MatchExpr,
     ParenExpr,
+    Pattern,
     Spread,
     Statement,
     StringExpr,
@@ -61,11 +64,22 @@ class Compiler:
     scope: Scope = field(default_factory=Scope)
     code: list[SyntaxNode] = field(default_factory=list)
 
-    def push(self, code: SyntaxNode) -> Optional[Loc]:
-        self.code.append(code)
+    def push(self, instr: Instr) -> Optional[Loc]:
+        """Push the instruction into the code object
+
+        Args:
+            instr (Instr): The instruction to push
+
+        Raises:
+            NotImplementedError: The instruction type is not implemented
+
+        Returns:
+            Optional[Loc]: The location of the value pushed on the stack by the instruction, if any
+        """
+        self.code.append(instr)
 
         ix = None
-        match code.ty:
+        match instr:
             case Push(ref):
                 ix = self.scope.temporary()
 
@@ -88,32 +102,92 @@ class Compiler:
                 self.scope.pop()
 
             case _:
-                raise NotImplementedError(f"`Compiler.push({type(code).__name__})`")
+                raise NotImplementedError(f"`Compiler.push({type(instr).__name__})`")
 
         return ix
 
-    def compile_statement(self, statement: Statement) -> Optional[int]:
+    def compile_pattern(self, pattern: Pattern) -> Loc:
+        """Attempts to match the value on the top of the stack
+
+        Args:
+            pattern (Pattern): The pattern to match
+
+        Raises:
+            NotImplementedError: The given pattern type is not implemented
+
+        Returns:
+            int: The stack location of the boolean value indicating whether the pattern matched or not
+        """
+        match pattern:
+            case _:
+                raise NotImplementedError(f"Compiler.compile_pattern({type(pattern).__name__})")
+
+    def compile_statement(self, statement: Statement) -> Optional[Loc]:
+        """Compile the statement
+
+        Args:
+            statement (Statement): The statement to compile
+
+        Raises:
+            NotImplementedError: The statement type is not implemented
+
+        Returns:
+            Optional[Loc]: The location of the value produced by the statement
+        """
         match statement:
             case ExprStatement(_, inner):
                 return self.compile_expr(inner)
+
+            case LetStatement(pattern, inner):
+                self.compile_expr(inner)
+                ix = self.compile_pattern(pattern)
+                return self.push(Assert(Loc(ix), "irrefutable bind failure"))
 
             case _:
                 raise NotImplementedError(
                     f"`Compiler.compile_statement({type(statement).__name__})`"
                 )
 
-    def compile_statements(self, statements: list[Statement]) -> int:
-        self.scope = Scope(self.scope)
-        result_ix = None
-        for statement in statements:
-            result_ix = self.compile_statement(statement)
-        if result_ix is None:
-            instr = Push(Ref.Imm(Unit()))
-            result_ix = self.push(instr)
-        self.scope = self.scope.prev
-        return result_ix
+    def compile_statements(self, statements: list[Statement]) -> Optional[Loc]:
+        """Compile a series of statements
 
-    def compile_expr(self, expr: Expr) -> int:
+        Args:
+            statements (list[Statement]): The statements to compile
+
+        Returns:
+            Optional[Loc]: The location of the value created by the final statement, if any
+        """
+        self.scope = Scope(self.scope)
+        result = None
+        for statement in statements:
+            result = self.compile_statement(statement)
+        if result is None:
+            instr = Push(Ref.Imm(Unit()))
+            result = self.push(instr)
+        self.scope = self.scope.prev
+        return result
+
+    def compile_expr(self, expr: Expr) -> Loc:
+        """Compile the expression
+
+        Args:
+            expr (Expr): The expression to compile
+
+        Raises:
+            NotImplementedError: _description_
+            CompileError: _description_
+            NotImplementedError: _description_
+            NotImplementedError: _description_
+            NotImplementedError: _description_
+            NotImplementedError: _description_
+            NotImplementedError: _description_
+            NotImplementedError: _description_
+            NotImplementedError: _description_
+            NotImplementedError: _description_
+
+        Returns:
+            Loc: The location of the value produced by the expression
+        """
         match expr:
             case IdExpr(span):
                 name = span.str()
@@ -215,3 +289,29 @@ class Compiler:
 
             case _:
                 raise NotImplementedError(f"`Compiler.compile({type(expr).__name__})`")
+
+    def into_closure(self) -> Closure:
+        """Turn the code object from the compiler into a Closure and clear the compiler
+
+        Returns:
+            Closure: The closure produced from the code object
+        """
+        closure = Closure(ClosureSpec(self.code, 0, []), [])
+        self.scope = Scope()
+        self.code = []
+        return closure
+
+
+def compile(input: Expr | list[Statement] | str):
+    compiler = Compiler()
+    if isinstance(input, str):
+        res = statements(input)
+        compiler.compile_statements(res.val)
+    elif isinstance(input, Expr):
+        compiler.compile_expr(input)
+    elif isinstance(input, list):
+        compiler.compile_statements(input)
+    else:
+        raise TypeError
+
+    return compiler.into_closure()

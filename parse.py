@@ -10,6 +10,7 @@ pattern = Parser()
 #
 
 keywords = alt(
+    "let",
     "if",
     "else",
     "use",
