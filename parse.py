@@ -93,6 +93,7 @@ string = starmap(
 )
 
 call = starmap(seq(atom, ws, "(", ws, sep(expr, ","), ws, ")"), CallExpr)
+index = starmap(seq(atom, ws, "[", ws, sep(expr, ","), ws, "]"), IndexExpr)
 
 ## array
 array = starmap(
@@ -125,7 +126,7 @@ loop_expr = starmap(seq("loop", ws, "{", ws, statements, ws, "}"), LoopExpr)
 
 atom.f = alt(integer, float_expr, string, id, tag_expr, array, paren, spread, block, fn)
 
-expr.f = alt(atom)
+expr.f = alt(atom, call, index)
 
 #
 # pattern

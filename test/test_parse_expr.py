@@ -460,6 +460,30 @@ def test_call():
     assert not call(s)
 
 
+def test_index():
+    s = "f[]"
+    assert index(s)
+
+    s = "f[x, y, z]"
+    assert index(s)
+
+    s = "f[x, y, z,]"
+    assert index(s)
+
+    s = "f [ x , y , z , ]"
+    assert index(s)
+
+    # errors
+    s = ""
+    assert not index(s)
+
+    s = "f"
+    assert not index(s)
+
+    s = "f f"
+    assert not index(s)
+
+
 def test_loop_expr():
     s = ""
     assert not loop_expr(s)

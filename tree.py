@@ -186,7 +186,10 @@ class IndexExpr(Expr):
         e0[e1, e2, ...]
     """
 
-    pass
+    subject: Expr
+    lsq_token: Span
+    indices: list[Expr]
+    rsq_token: Span
 
 
 @dataclass
