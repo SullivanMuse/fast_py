@@ -241,6 +241,7 @@ fn_statement = starmap(
     ),
     lambda span, *rest: FnStatement(span, None, *rest),
 )
+match_statement = map(match_expr, lambda span, inner: MatchStatement(span, None, inner))
 
 # semi required
 expr_statement = map(expr, lambda span, inner: ExprStatement(span, None, inner))
@@ -264,11 +265,11 @@ assign_statement = starmap(
     seq(pattern, ws, "=", ws, expr),
     lambda span, *rest: AssignStatement(span, None, *rest),
 )
-match_statement = map(match_expr, lambda span, inner: MatchStatement(span, None, inner))
 
 semi_optional = alt(
     fn_statement,
     loop_statement,
+    match_statement,
 )
 semi_required = alt(
     expr_statement,
