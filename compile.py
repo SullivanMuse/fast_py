@@ -35,12 +35,12 @@ from value import *
 @dataclass
 class Scope:
     prev: Optional["Scope"] = None
-    map: dict[str, int] = field(default_factory=dict)
+    map: dict[str, Loc] = field(default_factory=dict)
     temporary_count: int = 0
 
     def __getitem__(self, key) -> Loc:
         try:
-            return Loc(self.map[key])
+            return self.map[key]
         except KeyError:
             if self.prev is None:
                 raise KeyError
@@ -174,16 +174,8 @@ class Compiler:
             expr (Expr): The expression to compile
 
         Raises:
-            NotImplementedError: _description_
-            CompileError: _description_
-            NotImplementedError: _description_
-            NotImplementedError: _description_
-            NotImplementedError: _description_
-            NotImplementedError: _description_
-            NotImplementedError: _description_
-            NotImplementedError: _description_
-            NotImplementedError: _description_
-            NotImplementedError: _description_
+            CompileError: Spread expression appears outside of an array literal
+            NotImplementedError: The expression type is not implemented
 
         Returns:
             Loc: The location of the value produced by the expression
