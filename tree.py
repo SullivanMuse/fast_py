@@ -452,6 +452,7 @@ class ReturnStatement(Statement):
         return [x]
     """
 
+    return_token: Span
     inner: Optional[Expr]
 
 

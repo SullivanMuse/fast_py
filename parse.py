@@ -233,19 +233,23 @@ fn_statement = starmap(
 expr_statement = map(seq(expr), lambda span, inner: ExprStatement(span, None, inner))
 return_statement = map(
     seq("return", opt(ws, expr)),
-    lambda span, inner: ReturnStatement(span, None, inner[1]),
+    lambda span, *rest: ReturnStatement(span, None, *rest),
 )
 continue_statement = starmap(
     seq("continue", opt(ws, label)),
-    lambda span, continue_token, label: ContinueStatement(
-        span, None, continue_token, label
-    ),
+    lambda span, *rest: ContinueStatement(span, None, *rest),
 )
 break_statement = starmap(
     seq("break", opt(ws, label), opt(ws, expr)),
-    lambda span, continue_token, label, inner: BreakStatement(
-        span, None, continue_token, label, inner
-    ),
+    lambda span, *rest: BreakStatement(span, None, *rest),
+)
+let_statement = starmap(
+    seq("let", ws, pattern, ws, "=", ws, expr),
+    lambda span, *rest: LetStatement(span, None, *rest),
+)
+assign_statement = starmap(
+    seq(pattern, ws, "=", ws, expr),
+    lambda span, *rest: AssignStatement(span, None, *rest),
 )
 
 semi_optional = alt(
@@ -253,7 +257,12 @@ semi_optional = alt(
     loop_statement,
 )
 semi_required = alt(
-    expr_statement, return_statement, continue_statement, break_statement
+    expr_statement,
+    return_statement,
+    continue_statement,
+    break_statement,
+    let_statement,
+    assign_statement,
 )
 
 

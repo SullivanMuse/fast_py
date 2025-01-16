@@ -110,3 +110,45 @@ def test_fn_statement():
 
     s = "fn name(x, y) { x; y }"
     assert fn_statement(s)
+
+
+def test_let():
+    s = "let x = 5"
+    assert let_statement(s)
+
+    s = "let x=5"
+    assert let_statement(s)
+
+    # errors
+    s = "let"
+    assert not let_statement(s)
+
+    s = "="
+    assert not let_statement(s)
+
+    s = "le"
+    assert not let_statement(s)
+
+    s = "let x ="
+    assert not let_statement(s)
+
+
+def test_assign():
+    s = "x = 5"
+    assert assign_statement(s)
+
+    s = "x=5"
+    assert assign_statement(s)
+
+    # errors
+    s = "let"
+    assert not assign_statement(s)
+
+    s = "="
+    assert not assign_statement(s)
+
+    s = "le"
+    assert not assign_statement(s)
+
+    s = "let x ="
+    assert not assign_statement(s)
