@@ -121,7 +121,10 @@ fn = starmap(
 )
 block = starmap(seq("{", ws, statements, ws, "}"), BlockExpr)
 
-
+arm = starmap(seq(pattern, ws, "->", ws, expr), Arm)
+match_expr = starmap(
+    seq("match", ws, expr, ws, "{", ws, sep(arm, ","), ws, "}"), MatchExpr
+)
 loop_expr = starmap(seq("loop", ws, "{", ws, statements, ws, "}"), LoopExpr)
 
 atom.f = alt(integer, float_expr, string, id, tag_expr, array, paren, spread, block, fn)
@@ -240,7 +243,7 @@ fn_statement = starmap(
 )
 
 # semi required
-expr_statement = map(seq(expr), lambda span, inner: ExprStatement(span, None, inner))
+expr_statement = map(expr, lambda span, inner: ExprStatement(span, None, inner))
 return_statement = starmap(
     seq("return", opt(ws, expr)),
     lambda span, *rest: ReturnStatement(span, None, *rest),
@@ -261,6 +264,7 @@ assign_statement = starmap(
     seq(pattern, ws, "=", ws, expr),
     lambda span, *rest: AssignStatement(span, None, *rest),
 )
+match_statement = map(match_expr, lambda span, inner: MatchStatement(span, None, inner))
 
 semi_optional = alt(
     fn_statement,

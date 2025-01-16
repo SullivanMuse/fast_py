@@ -95,6 +95,29 @@ def test_loop_statement():
     assert loop_statement(s)
 
 
+def test_match_statement():
+    s = ""
+    assert not match_statement(s)
+
+    s = "match"
+    assert not match_statement(s)
+
+    s = "match {"
+    assert not match_statement(s)
+
+    s = "match }"
+    assert not match_statement(s)
+
+    s = "match x {}"
+    assert match_statement(s)
+
+    s = "match x { x -> x , x -> y }"
+    assert match_statement(s)
+
+    s = "match x{x->x,x->y}"
+    assert match_statement(s)
+
+
 def test_fn_statement():
     s = "fn name() {}"
     assert fn_statement(s)

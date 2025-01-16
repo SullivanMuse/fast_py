@@ -504,6 +504,29 @@ def test_loop_expr():
     assert loop_expr(s)
 
 
+def test_match_expr():
+    s = ""
+    assert not match_expr(s)
+
+    s = "match"
+    assert not match_expr(s)
+
+    s = "match {"
+    assert not match_expr(s)
+
+    s = "match }"
+    assert not match_expr(s)
+
+    s = "match x {}"
+    assert match_expr(s)
+
+    s = "match x { x -> x , x -> y }"
+    assert match_expr(s)
+
+    s = "match x{x->x,x->y}"
+    assert match_expr(s)
+
+
 def test_block():
     # success
     assert block("{}") == Success(

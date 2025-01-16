@@ -11,12 +11,7 @@ class SyntaxNode(FormatNode):
 
     @property
     def children(self):
-        if hasattr("inner"):
-            return [self.inner]
-        elif hasattr("items"):
-            return self.items
-        else:
-            return ()
+        raise NotImplementedError
 
     def str(self):
         return f"{self.ty.name} {self.span}"
@@ -265,6 +260,13 @@ class BlockExpr(Expr):
 
 
 @dataclass
+class Arm(SyntaxNode):
+    pattern: "Pattern"
+    arrow_token: Span
+    expr: Expr
+
+
+@dataclass
 class MatchExpr(Expr):
     """Match expression
 
@@ -272,8 +274,11 @@ class MatchExpr(Expr):
         match e0 { arm... }
     """
 
+    match_token: Span
     subject: Expr
-    arms: list[tuple["Pattern", Expr]]
+    lbrace_token: Span
+    arms: list[Arm]
+    rbrace_token: Span
 
 
 @dataclass
