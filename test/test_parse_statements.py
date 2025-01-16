@@ -1,6 +1,25 @@
 from parse import *
 
 
+def test_expr_statement():
+    s = "x"
+    assert expr_statement(s)
+
+    s = ""
+    assert not expr_statement(s)
+
+
+def test_return_statement():
+    s = "return"
+    assert return_statement(s)
+
+    s = "return x"
+    assert return_statement(s)
+
+    s = ""
+    assert not return_statement(s)
+
+
 # def test_break_statement():
 #     s = "break"
 #     assert break_statement(s) == Success(

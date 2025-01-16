@@ -202,7 +202,9 @@ pattern.f = alt(
 # statements
 #
 
-expr_statment = map(seq(expr), lambda span, inner: ExprStatement(span, None, inner))
+expr_statement = map(seq(expr), lambda span, inner: ExprStatement(span, None, inner))
+
+return_statement = map(seq("return", opt(ws, expr)), lambda span, inner: ReturnStatement(span, None, inner[1]))
 
 # break_statement = map("break", lambda span, _: BreakStatement(span, None, None))
 # continue_statement = map("continue", lambda span, _: ContinueStatement(span, None))
@@ -212,7 +214,7 @@ expr_statment = map(seq(expr), lambda span, inner: ExprStatement(span, None, inn
 # )
 
 semi_optional = not_implemented("autonomous_statement")
-semi_required = alt(expr_statment)
+semi_required = alt(expr_statement, return_statement)
 
 
 @Parser
