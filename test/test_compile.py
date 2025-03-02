@@ -42,6 +42,18 @@ def test_compile_string():
         ],
     )
     code_test(
+        '"asdf{"asdf"}asdf"',
+        [
+            Push(value=Imm(value=String(value="asdf"))),
+            Push(value=Imm(value=StringBuffer(pieces=[Loc(index=0)]))),
+            Push(value=Imm(value=String(value="asdf"))),
+            StringBufferPush(buffer_loc=Loc(index=1), piece=Loc(index=2)),
+            Push(value=Imm(value=String(value="asdf"))),
+            StringBufferPush(buffer_loc=Loc(index=1), piece=Loc(index=3)),
+            StringBufferToString(buffer_loc=Loc(index=1)),
+        ],
+    )
+    code_test(
         'let x = 12; x"Hello"',
         [
             Push(value=Imm(value=Int(value=12))),
