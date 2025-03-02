@@ -40,6 +40,9 @@ class Bool(Value):
 class Int(Value):
     value: int
 
+    def children(self):
+        yield self.value
+
 
 @dataclass
 class Tag(Value):

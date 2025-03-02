@@ -1,7 +1,7 @@
 from comb import Span
 from compile import compile
-from instr import Imm, Loc, Push, StringBufferPush, StringBufferToString
-from value import Closure, ClosureSpec, Float, Int, String, StringBuffer, Tag
+from instr import Assert, Call, Imm, Loc, Push, StringBufferPush, StringBufferToString
+from value import Bool, Closure, ClosureSpec, Float, Int, String, StringBuffer, Tag
 
 
 def code_test(expr, code, message=None):
@@ -39,5 +39,16 @@ def test_compile_string():
             Push(value=Imm(value=String(value="asdf"))),
             StringBufferPush(buffer_loc=Loc(index=1), piece=Loc(index=3)),
             StringBufferToString(buffer_loc=Loc(index=1)),
+        ],
+    )
+    code_test(
+        'let x = 12; x"Hello"',
+        [
+            Push(value=Imm(value=Int(value=12))),
+            Push(value=Bool(value=True)),
+            Assert(value=Loc(index=1), reason="Irrefutable pattern: IdPattern 4:5 'x'"),
+            Push(value=Imm(value=String(value="Hello"))),
+            Push(value=Loc(index=0)),
+            Call(closure=Loc(index=0)),
         ],
     )

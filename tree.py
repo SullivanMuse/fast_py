@@ -100,7 +100,7 @@ class StringExpr(Expr):
         d"Hello\\, {x}"
     """
 
-    fn: Optional[Span]
+    fn: Optional["IdExpr"]
 
     # >= 1
     chars: list[str]

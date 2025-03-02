@@ -128,12 +128,15 @@ class Compiler:
             case StringBufferToString():
                 ix = self.scope.push()
 
+            case Assert():
+                pass
+
             case _:
                 raise NotImplementedError(f"`Compiler.push({type(instr).__name__})`")
 
         return ix
 
-    def compile_pattern(self, pattern: Pattern) -> Loc:
+    def compile_pattern(self, pattern: Pattern, irrefutable=False) -> Loc:
         """Attempts to match the value on the top of the stack
 
         Args:
@@ -143,7 +146,7 @@ class Compiler:
             NotImplementedError: The given pattern type is not implemented
 
         Returns:
-            int: The stack location of the boolean value indicating whether the pattern matched or not
+            Optional[int]: The stack location of the boolean value indicating whether the pattern matched or not, unless the pattern does not branch
         """
         print(f"`Compiler.compile_pattern({type(pattern)})`")
         match pattern:
@@ -152,13 +155,14 @@ class Compiler:
                 ix = self.scope.top()
                 if pattern.inner is not None:
                     self.compile_pattern(pattern.inner)
-                self.scope[pattern.name] = ix
+                self.scope[pattern.name.str()] = ix
+                return self.push(Push(Bool(True)))
 
             case ArrayPattern():
                 lower_bound = sum(
                     1 for x in pattern.items if not isinstance(x, GatherPattern)
                 )
-                self.push(MatchArray(lower_bound))
+                return self.push(MatchArray(lower_bound))
 
             case _:
                 raise NotImplementedError(
@@ -185,7 +189,8 @@ class Compiler:
             case LetStatement():
                 self.compile_expr(statement.inner)
                 ix = self.compile_pattern(statement.pattern)
-                # return self.push(Assert(Loc(ix), "irrefutable bind failure"))
+                instr = Assert(ix, f"Irrefutable pattern: {statement.pattern}")
+                return self.push(instr)
 
             case FnStatement():
                 pass
@@ -278,8 +283,8 @@ class Compiler:
 
                 # apply fn
                 if expr.fn is not None:
-                    fn_ix = self.compile_expr(expr.fn)
-                    instr = Call(Ref.Loc(fn_ix))
+                    self.compile_expr(expr.fn)
+                    instr = Call(self.scope[expr.fn.span.str()])
                     ix = self.push(instr)
 
                 return ix

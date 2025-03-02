@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict, fields
 
 from mixins import FormatNode, GetChildren
 
@@ -36,13 +36,14 @@ class Instr(FormatNode, GetChildren):
     def short(self):
         return f"Instr.{type(self).__name__}"
 
+    def children(self):
+        for field in fields(type(self)):
+            yield getattr(self, field.name)
+
 
 @dataclass
 class Push(Instr):
     value: Ref
-
-    def children(self):
-        yield self.value
 
 
 @dataclass
