@@ -2,7 +2,19 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from errors import CompileError
-from instr import ArrayExtend, ArrayPush, Assert, Call, ClosureNew, Jump, Loc, MatchArray, Pop, Push, Ref
+from instr import (
+    ArrayExtend,
+    ArrayPush,
+    Assert,
+    Call,
+    ClosureNew,
+    Jump,
+    Loc,
+    MatchArray,
+    Pop,
+    Push,
+    Ref,
+)
 from parse import statements
 from tree import (
     ArrayExpr,
@@ -134,11 +146,15 @@ class Compiler:
                 self.scope[pattern.name] = ix
 
             case ArrayPattern():
-                lower_bound = sum(1 for x in pattern.items if not isinstance(x, GatherPattern))
+                lower_bound = sum(
+                    1 for x in pattern.items if not isinstance(x, GatherPattern)
+                )
                 self.push(MatchArray(lower_bound))
 
             case _:
-                raise NotImplementedError(f"`Compiler.compile_pattern({type(pattern).__name__})`")
+                raise NotImplementedError(
+                    f"`Compiler.compile_pattern({type(pattern).__name__})`"
+                )
 
     def compile_statement(self, statement: Statement) -> Optional[Loc]:
         """Compile the statement

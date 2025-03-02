@@ -5,16 +5,61 @@ from comb import Span
 from mixins import FormatNode
 
 
+MAX_DEPTH = 10
+
+
 @dataclass
 class SyntaxNode(FormatNode):
     span: Span
 
-    @property
     def children(self):
-        raise NotImplementedError
+        return ()
 
     def str(self):
-        return f"{self.ty.name} {self.span}"
+        return f"{type(self).__name__} {self.span}"
+
+    def pretty(self, recursive=True, max_depth=MAX_DEPTH, depth=0, visited=None):
+        """Pretty-print the structure to a str
+
+        Args:
+            recursive (bool, optional): Recursively show children. Defaults to True.
+            max_depth (int, optional): Max recursion depth. Defaults to MAX_DEPTH.
+            depth (int, optional): Current recursion depth. Defaults to 0.
+            visited (set[int], optional): Used for cycle detection. Defaults to None.
+
+        Returns:
+            str: Pretty-printed str
+        """
+        indent = "  " * depth
+        if depth > max_depth:
+            return f"{indent}...max_depth exceeded"
+        if recursive:
+            if visited is None:
+                visited = set()
+            if id(self) in visited:
+                return f"{indent}{self.str()}\n{'  '*(depth+1)}...cycle"
+            visited.add(id(self))
+            children_str = "\n".join(
+                child.pretty(
+                    recursive=recursive,
+                    max_depth=max_depth,
+                    depth=depth + 1,
+                    visited=visited,
+                )
+                for child in self.children()
+            )
+            if children_str:
+                return f"{indent}{self.str()}\n{children_str}"
+        return f"{indent}{self.str()}"
+
+    def pprint(self, recursive=True, max_depth=MAX_DEPTH):
+        """Pretty-print the structure
+
+        Args:
+            recursive (bool, optional): Pretty-print children recursively. Defaults to True.
+            max_depth (int, optional): Max recursion depth. Defaults to MAX_DEPTH.
+        """
+        print(self.pretty(max_depth=max_depth, recursive=recursive))
 
 
 @dataclass
@@ -74,8 +119,6 @@ class IntExpr(Expr):
         123
     """
 
-    pass
-
 
 @dataclass
 class TagExpr(Expr):
@@ -85,8 +128,6 @@ class TagExpr(Expr):
         :a
     """
 
-    pass
-
 
 @dataclass
 class FloatExpr(Expr):
@@ -95,8 +136,6 @@ class FloatExpr(Expr):
     Example:
         123.456
     """
-
-    pass
 
 
 @dataclass
@@ -118,6 +157,9 @@ class StringExpr(Expr):
     lquote: Span
     rquote: Span
 
+    def children(self):
+        yield from self.interpolants
+
 
 @dataclass
 class ArrayExpr(Expr):
@@ -130,6 +172,9 @@ class ArrayExpr(Expr):
     lbracket: Span
     items: list[Expr]
     rbracket: Span
+
+    def children(self):
+        yield from self.items
 
 
 @dataclass
@@ -145,6 +190,9 @@ class Spread(Expr):
     ellipsis: Span
     inner: Expr
 
+    def children(self):
+        yield self.inner
+
 
 @dataclass
 class ParenExpr(Expr):
@@ -157,6 +205,9 @@ class ParenExpr(Expr):
     lpar: Span
     inner: Expr
     rpar: Span
+
+    def children(self):
+        yield self.inner
 
 
 @dataclass
@@ -172,6 +223,10 @@ class CallExpr(Expr):
     args: list[Expr]
     rpar_token: Span
 
+    def children(self):
+        yield self.fn
+        yield from self.args
+
 
 @dataclass
 class IndexExpr(Expr):
@@ -186,6 +241,10 @@ class IndexExpr(Expr):
     indices: list[Expr]
     rsq_token: Span
 
+    def children(self):
+        yield self.subject
+        yield from self.indices
+
 
 @dataclass
 class BinaryExpr(Expr):
@@ -195,7 +254,13 @@ class BinaryExpr(Expr):
         e0**e1
     """
 
-    pass
+    op: Span
+    left: Expr
+    right: Expr
+
+    def children(self):
+        yield self.left
+        yield self.right
 
 
 @dataclass
@@ -206,7 +271,11 @@ class UnaryExpr(Expr):
         !e0 e0.await e0.chain e0? e0.x
     """
 
-    pass
+    op: Span
+    inner: Expr
+
+    def children(self):
+        yield self.inner
 
 
 @dataclass
@@ -217,7 +286,11 @@ class ComparisonExpr(Expr):
         x is y isnot z
     """
 
-    pass
+    ops: list[Span]  # len(self.ops) == len(self.inner) - 1
+    inner: list[Expr]
+
+    def children(self):
+        yield from self.inner
 
 
 @dataclass
@@ -228,7 +301,8 @@ class IdExpr(Expr):
         a
     """
 
-    pass
+    def children(self):
+        yield from ()
 
 
 @dataclass
@@ -245,6 +319,10 @@ class FnExpr(Expr):
     rpar: Span
     inner: Expr
 
+    def children(self):
+        yield from self.params
+        yield self.inner
+
 
 @dataclass
 class BlockExpr(Expr):
@@ -258,12 +336,19 @@ class BlockExpr(Expr):
     statements: list["Statement"]
     rbrace: Span
 
+    def children(self):
+        yield from self.statements
+
 
 @dataclass
 class Arm(SyntaxNode):
     pattern: "Pattern"
     arrow_token: Span
     expr: Expr
+
+    def children(self):
+        yield self.pattern
+        yield self.expr
 
 
 @dataclass
@@ -280,6 +365,10 @@ class MatchExpr(Expr):
     arms: list[Arm]
     rbrace_token: Span
 
+    def children(self):
+        yield self.subject
+        yield from self.arms
+
 
 @dataclass
 class LoopExpr(Expr):
@@ -293,6 +382,9 @@ class LoopExpr(Expr):
     lbrace_token: Span
     statements: list["Statement"]
     rbrace_token: Span
+
+    def children(self):
+        yield from self.statements
 
 
 def free(statements, set_=None) -> set[str]:
@@ -349,6 +441,9 @@ class ExprStatement(Statement):
 
     inner: Expr
 
+    def children(self):
+        yield self.inner
+
 
 @dataclass
 class FnStatement(Statement):
@@ -362,6 +457,10 @@ class FnStatement(Statement):
     lbrace_token: Span
     body: list[Statement]
     rbrace_token: Span
+
+    def children(self):
+        yield from self.params
+        yield from self.body
 
 
 @dataclass
@@ -377,6 +476,10 @@ class LetStatement(Statement):
     eq_token: Span
     inner: Expr
 
+    def children(self):
+        yield self.pattern
+        yield self.inner
+
 
 @dataclass
 class AssignStatement(Statement):
@@ -391,6 +494,10 @@ class AssignStatement(Statement):
 
     eq_token: Span
 
+    def children(self):
+        yield self.pattern
+        yield self.inner
+
 
 @dataclass
 class LoopStatement(Statement):
@@ -402,6 +509,9 @@ class LoopStatement(Statement):
 
     loop_expr: LoopExpr
 
+    def children(self):
+        yield self.loop_expr
+
 
 @dataclass
 class MatchStatement(Statement):
@@ -412,6 +522,9 @@ class MatchStatement(Statement):
     """
 
     match_expr: MatchExpr
+
+    def children(self):
+        yield self.match_expr
 
 
 @dataclass
@@ -425,6 +538,10 @@ class BreakStatement(Statement):
     break_token: Span
     label: Optional[Span]
     inner: Optional[Expr]
+
+    def children(self):
+        if self.inner is not None:
+            yield self.inner
 
 
 @dataclass
@@ -449,6 +566,9 @@ class BlockStatement(Statement):
 
     statements: list["Statement"]
 
+    def children(self):
+        yield from self.statements
+
 
 @dataclass
 class ReturnStatement(Statement):
@@ -460,6 +580,10 @@ class ReturnStatement(Statement):
 
     return_token: Span
     inner: Optional[Expr]
+
+    def children(self):
+        if self.inner is not None:
+            yield self.inner
 
 
 @dataclass
@@ -515,6 +639,10 @@ class IdPattern(Pattern):
     name: Span
     at_token: Optional[Span] = None
     inner: Optional[Pattern] = None
+
+    def children(self):
+        if self.inner is not None:
+            yield self.inner
 
 
 @dataclass
@@ -576,6 +704,9 @@ class ArrayPattern(Pattern):
     commas: list[Span]
     rsq: Span
 
+    def children(self):
+        yield from self.items
+
 
 @dataclass
 class GatherPattern(Pattern):
@@ -589,3 +720,6 @@ class GatherPattern(Pattern):
 
     ellipsis: Span
     inner: Pattern
+
+    def children(self):
+        yield self.inner
