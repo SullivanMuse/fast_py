@@ -60,8 +60,10 @@ class FormatNode:
             if depth + 1 >= max_depth:
                 yield f"{indent}  <exceeded max depth of {max_depth}>"
                 break
-            else:
+            elif isinstance(child, FormatNode):
                 yield from child.pretty_lines(recursive, max_depth, visited, depth + 1)
+            else:
+                yield f"{indent}  {child}"
 
     def pretty(self, **kwargs):
         """Convenience function for generating str from self.pretty_lines() generator
@@ -82,3 +84,12 @@ class FormatNode:
 
     def __str__(self):
         return self.pretty()
+
+
+class GetChildren:
+    """Use this method to add the subclasses of a class to its namespace"""
+
+    @classmethod
+    def get_children(cls):
+        for sub in cls.__subclasses__():
+            setattr(cls, sub.__name__, sub)

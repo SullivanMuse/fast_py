@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from comb import Span
-from mixins import FormatNode
+from mixins import FormatNode, GetChildren
 
 
 MAX_DEPTH = 10
@@ -17,7 +17,7 @@ class SyntaxNode(FormatNode):
 
 
 @dataclass
-class Expr(SyntaxNode):
+class Expr(SyntaxNode, GetChildren):
     def free(self, set_=None) -> set[str]:
         if set_ is None:
             set_ = set()
@@ -378,7 +378,7 @@ def free(statements, set_=None) -> set[str]:
 
 
 @dataclass
-class Statement(SyntaxNode):
+class Statement(SyntaxNode, GetChildren):
     semi_token: Optional[Span]
 
 
@@ -538,7 +538,7 @@ class ReturnStatement(Statement):
 
 
 @dataclass
-class Pattern(SyntaxNode):
+class Pattern(SyntaxNode, GetChildren):
     def bind(self, set_=None) -> set[str]:
         if set_ is None:
             set_ = set()
@@ -674,3 +674,8 @@ class GatherPattern(Pattern):
 
     def children(self):
         yield self.inner
+
+
+Expr.get_children()
+Pattern.get_children()
+Statement.get_children()

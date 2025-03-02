@@ -252,7 +252,7 @@ class Compiler:
 
             case StringExpr():
                 # in the special case that there is only one char and no interpolants, simply create the value in-place
-                value = String(expr.chars[0])
+                value = String(expr.chars[0].string)
                 instr = Push(Ref.Imm(value))
                 ix = self.push(instr)
 
@@ -268,7 +268,7 @@ class Compiler:
                         self.push(instr)
 
                         # Compile char
-                        instr = Push(Ref.Imm(String(char)))
+                        instr = Push(Ref.Imm(String(char.string)))
                         piece_ix = self.push(instr)
                         instr = StringBufferPush(buf_ix, piece_ix)
                         self.push(instr)

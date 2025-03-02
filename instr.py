@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
-from mixins import FormatNode
+from mixins import FormatNode, GetChildren
 
 
-class Ref(FormatNode):
+class Ref(FormatNode, GetChildren):
     """Stack value offset"""
 
 
@@ -14,7 +14,10 @@ class Imm(Ref, FormatNode):
     value: "Value"
 
     def short(self):
-        return f"imm {self.value}"
+        return f"imm"
+
+    def children(self):
+        yield self.value
 
 
 @dataclass
@@ -25,8 +28,11 @@ class Loc(Ref, FormatNode):
         return f"loc {self.index}"
 
 
+Ref.get_children()
+
+
 @dataclass
-class Instr(FormatNode):
+class Instr(FormatNode, GetChildren):
     def short(self):
         return f"Instr.{type(self).__name__}"
 
@@ -108,3 +114,6 @@ class MatchArray(Instr):
 class Index(Instr):
     array: Ref
     ix: Ref
+
+
+Instr.get_children()

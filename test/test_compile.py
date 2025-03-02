@@ -1,6 +1,7 @@
+from comb import Span
 from compile import compile
-from instr import Imm, Push
-from value import Closure, ClosureSpec, Float, Int, String, Tag
+from instr import Imm, Loc, Push, StringBufferPush, StringBufferToString
+from value import Closure, ClosureSpec, Float, Int, String, StringBuffer, Tag
 
 
 def code_test(expr, code, message=None):
@@ -27,5 +28,16 @@ def test_compile_tag():
 
 
 def test_compile_string():
-    code_test('"asdf"', [Push(value=Imm(value=String(value="asdf")))])
-    code_test('"x{123}y"', [Push(value=Imm(value=String(value="x123y")))])
+    code_test('"asdf"', [Push(value=Imm(value=String(value='"asdf"')))])
+    code_test(
+        '"asdf{123}asdf"',
+        [
+            Push(value=Imm(value=String(value='"asdf{123}asdf"'))),
+            Push(value=Imm(value=StringBuffer(pieces=[Loc(index=0)]))),
+            Push(value=Imm(value=Int(value=123))),
+            StringBufferPush(buffer_loc=Loc(index=1), piece=Loc(index=2)),
+            Push(value=Imm(value=String(value='"asdf{123}asdf"'))),
+            StringBufferPush(buffer_loc=Loc(index=1), piece=Loc(index=3)),
+            StringBufferToString(buffer_loc=Loc(index=1)),
+        ],
+    )

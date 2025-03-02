@@ -5,20 +5,22 @@ from mixins import FormatNode
 
 
 @dataclass
-class ClosureSpec:
+class ClosureSpec(FormatNode):
     code: list[Instr]
     n_args: int
     capture_indices: list[int]
 
+    def short(self):
+        return f"{type(self).__qualname__}"
+
+    def children(self):
+        yield from self.code
+
 
 @dataclass
 class Value(FormatNode):
-    def str(self):
+    def short(self):
         return f"Value.{type(self).__name__}"
-
-    @property
-    def children(self):
-        return []
 
 
 @dataclass
@@ -29,6 +31,9 @@ class Unit(Value):
 @dataclass
 class Bool(Value):
     value: bool
+
+    def children(self):
+        yield self.value
 
 
 @dataclass
@@ -45,6 +50,9 @@ class Tag(Value):
 class String(Value):
     value: str
 
+    def children(self):
+        yield self.value
+
 
 @dataclass
 class StringBuffer(Value):
@@ -60,18 +68,16 @@ class Float(Value):
 class Array(Value):
     values: list[Value] = field(default_factory=list)
 
-    @property
     def children(self):
-        return self.values
+        yield from self.values
 
 
 @dataclass
 class Object(Value):
     values: dict[str, Value]
 
-    @property
     def children(self):
-        return list(self.values.values())
+        yield from self.values.values()
 
 
 @dataclass
@@ -83,6 +89,6 @@ class Closure(Value):
     def from_code(cls, code):
         return cls(ClosureSpec(code, 0, []), [])
 
-    @property
     def children(self):
-        return self.captures
+        yield self.spec
+        yield from self.captures
