@@ -2,10 +2,11 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from errors import CompileError
-from instr import ArrayExtend, ArrayPush, Assert, Call, ClosureNew, Jump, Loc, Pop, Push, Ref
+from instr import ArrayExtend, ArrayPush, Assert, Call, ClosureNew, Jump, Loc, MatchArray, Pop, Push, Ref
 from parse import statements
 from tree import (
     ArrayExpr,
+    ArrayPattern,
     BinaryExpr,
     BlockExpr,
     CallExpr,
@@ -14,7 +15,9 @@ from tree import (
     ExprStatement,
     FloatExpr,
     FnExpr,
+    GatherPattern,
     IdExpr,
+    IdPattern,
     IndexExpr,
     IntExpr,
     LetStatement,
@@ -36,7 +39,7 @@ from value import *
 class Scope:
     prev: Optional["Scope"] = None
     map: dict[str, Loc] = field(default_factory=dict)
-    temporary_count: int = 0
+    depth: int = 0
 
     def __getitem__(self, key) -> Loc:
         try:
@@ -49,14 +52,17 @@ class Scope:
     def __setitem__(self, key, value):
         self.map[key] = value
 
-    def temporary(self) -> Loc:
-        ix = len(self.map) + self.temporary_count
-        self.temporary_count += 1
-        return Loc(ix)
+    def push(self) -> Loc:
+        self.depth += 1
+        return self.top()
 
     def pop(self):
-        """Reduce temporaries"""
-        self.temporary_count -= 1
+        """Reduce stack depth"""
+        self.depth -= 1
+
+    def top(self) -> Loc:
+        if self.depth != 0:
+            return Loc(self.depth - 1)
 
 
 @dataclass
@@ -81,7 +87,7 @@ class Compiler:
         ix = None
         match instr:
             case Push(ref):
-                ix = self.scope.temporary()
+                ix = self.scope.push()
 
             case ArrayPush(ref):
                 self.scope.pop()
@@ -90,10 +96,10 @@ class Compiler:
                 pass
 
             case ClosureNew(spec):
-                ix = self.scope.temporary()
+                ix = self.scope.push()
 
             case Call(ref):
-                ix = self.scope.temporary()
+                ix = self.scope.push()
 
             case Jump(condition, dest):
                 pass
@@ -118,9 +124,21 @@ class Compiler:
         Returns:
             int: The stack location of the boolean value indicating whether the pattern matched or not
         """
+        print(f"`Compiler.compile_pattern({type(pattern)})`")
         match pattern:
+            case IdPattern():
+                # Top of the stack is the last result compiled
+                ix = self.scope.top()
+                if pattern.inner is not None:
+                    self.compile_pattern(pattern.inner)
+                self.scope[pattern.name] = ix
+
+            case ArrayPattern():
+                lower_bound = sum(1 for x in pattern.items if not isinstance(x, GatherPattern))
+                self.push(MatchArray(lower_bound))
+
             case _:
-                raise NotImplementedError(f"Compiler.compile_pattern({type(pattern).__name__})")
+                raise NotImplementedError(f"`Compiler.compile_pattern({type(pattern).__name__})`")
 
     def compile_statement(self, statement: Statement) -> Optional[Loc]:
         """Compile the statement
@@ -134,18 +152,19 @@ class Compiler:
         Returns:
             Optional[Loc]: The location of the value produced by the statement
         """
+        print(f"`Compiler.compile_statement({type(statement)})`")
         match statement:
-            case ExprStatement(_, inner):
-                return self.compile_expr(inner)
+            case ExprStatement():
+                return self.compile_expr(statement.inner)
 
-            case LetStatement(pattern, inner):
-                self.compile_expr(inner)
-                ix = self.compile_pattern(pattern)
-                return self.push(Assert(Loc(ix), "irrefutable bind failure"))
+            case LetStatement():
+                self.compile_expr(statement.inner)
+                ix = self.compile_pattern(statement.pattern)
+                # return self.push(Assert(Loc(ix), "irrefutable bind failure"))
 
             case _:
                 raise NotImplementedError(
-                    f"`Compiler.compile_statement({type(statement).__name__})`"
+                    f"`Compiler.compile_statement({type(statement)})`"
                 )
 
     def compile_statements(self, statements: list[Statement]) -> Optional[Loc]:
@@ -180,6 +199,7 @@ class Compiler:
         Returns:
             Loc: The location of the value produced by the expression
         """
+        print(f"`Compiler.compile_expr({type(expr)})`")
         match expr:
             case IdExpr(span):
                 name = span.str()
@@ -280,7 +300,7 @@ class Compiler:
                 raise NotImplementedError
 
             case _:
-                raise NotImplementedError(f"`Compiler.compile({type(expr).__name__})`")
+                raise NotImplementedError(f"`Compiler.compile_expr({type(expr)})`")
 
     def into_closure(self) -> Closure:
         """Turn the code object from the compiler into a Closure and clear the compiler

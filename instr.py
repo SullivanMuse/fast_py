@@ -94,6 +94,11 @@ class IsType(Instr):
 
 
 @dataclass
+class MatchArray(Instr):
+    lower_bound: int
+
+
+@dataclass
 class Index(Instr):
     array: Ref
     ix: Ref

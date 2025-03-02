@@ -372,12 +372,10 @@ class LetStatement(Statement):
         let p = e
     """
 
-    pattern: "Pattern"
-    inner: Expr
-
-    # tokens
     let_token: Span
+    pattern: "Pattern"
     eq_token: Span
+    inner: Expr
 
 
 @dataclass
