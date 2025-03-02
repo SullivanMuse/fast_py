@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 from instr import Instr
-from mixins import FormatNode, GetChildren
+from mixins import FormatNode
 
 
 @dataclass
@@ -12,7 +12,7 @@ class ClosureSpec:
 
 
 @dataclass
-class Value(FormatNode, GetChildren):
+class Value(FormatNode):
     def str(self):
         return f"Value.{type(self).__name__}"
 
@@ -86,6 +86,3 @@ class Closure(Value):
     @property
     def children(self):
         return self.captures
-
-
-Value.get_children()

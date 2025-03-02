@@ -108,6 +108,3 @@ class MatchArray(Instr):
 class Index(Instr):
     array: Ref
     ix: Ref
-
-
-Instr.get_children()
