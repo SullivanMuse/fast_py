@@ -42,6 +42,16 @@ class Tag(Value):
 
 
 @dataclass
+class String(Value):
+    value: str
+
+
+@dataclass
+class StringBuffer(Value):
+    pieces: list[String]
+
+
+@dataclass
 class Float(Value):
     value: float
 

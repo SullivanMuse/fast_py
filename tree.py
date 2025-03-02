@@ -12,54 +12,8 @@ MAX_DEPTH = 10
 class SyntaxNode(FormatNode):
     span: Span
 
-    def children(self):
-        return ()
-
-    def str(self):
+    def short(self):
         return f"{type(self).__name__} {self.span}"
-
-    def pretty(self, recursive=True, max_depth=MAX_DEPTH, depth=0, visited=None):
-        """Pretty-print the structure to a str
-
-        Args:
-            recursive (bool, optional): Recursively show children. Defaults to True.
-            max_depth (int, optional): Max recursion depth. Defaults to MAX_DEPTH.
-            depth (int, optional): Current recursion depth. Defaults to 0.
-            visited (set[int], optional): Used for cycle detection. Defaults to None.
-
-        Returns:
-            str: Pretty-printed str
-        """
-        indent = "  " * depth
-        if depth > max_depth:
-            return f"{indent}...max_depth exceeded"
-        if recursive:
-            if visited is None:
-                visited = set()
-            if id(self) in visited:
-                return f"{indent}{self.str()}\n{'  '*(depth+1)}...cycle"
-            visited.add(id(self))
-            children_str = "\n".join(
-                child.pretty(
-                    recursive=recursive,
-                    max_depth=max_depth,
-                    depth=depth + 1,
-                    visited=visited,
-                )
-                for child in self.children()
-            )
-            if children_str:
-                return f"{indent}{self.str()}\n{children_str}"
-        return f"{indent}{self.str()}"
-
-    def pprint(self, recursive=True, max_depth=MAX_DEPTH):
-        """Pretty-print the structure
-
-        Args:
-            recursive (bool, optional): Pretty-print children recursively. Defaults to True.
-            max_depth (int, optional): Max recursion depth. Defaults to MAX_DEPTH.
-        """
-        print(self.pretty(max_depth=max_depth, recursive=recursive))
 
 
 @dataclass
@@ -300,9 +254,6 @@ class IdExpr(Expr):
     Example:
         a
     """
-
-    def children(self):
-        yield from ()
 
 
 @dataclass

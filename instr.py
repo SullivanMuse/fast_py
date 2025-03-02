@@ -1,19 +1,19 @@
 from dataclasses import dataclass
 
-from mixins import FormatNode, GetChildren
+from mixins import FormatNode
 
 
-class Ref(GetChildren):
-    @property
-    def children(self):
-        return ()
+class Ref(FormatNode):
+    """Stack value offset"""
 
 
 @dataclass
 class Imm(Ref, FormatNode):
+    """Literal value"""
+
     value: "Value"
 
-    def str(self):
+    def short(self):
         return f"imm {self.value}"
 
 
@@ -21,27 +21,22 @@ class Imm(Ref, FormatNode):
 class Loc(Ref, FormatNode):
     index: int
 
-    def str(self):
+    def short(self):
         return f"loc {self.index}"
 
 
-Ref.get_children()
-
-
 @dataclass
-class Instr(FormatNode, GetChildren):
-    def str(self):
+class Instr(FormatNode):
+    def short(self):
         return f"Instr.{type(self).__name__}"
-
-    @classmethod
-    def _get_classes(cls):
-        for sub in cls.__subclasses__():
-            setattr(cls, sub.__name__, sub)
 
 
 @dataclass
 class Push(Instr):
     value: Ref
+
+    def children(self):
+        yield self.value
 
 
 @dataclass
@@ -54,6 +49,17 @@ class ArrayPush(Instr):
 class ArrayExtend(Instr):
     array_loc: Loc
     item_ref: Ref
+
+
+@dataclass
+class StringBufferPush(Instr):
+    buffer_loc: Loc
+    piece: Loc
+
+
+@dataclass
+class StringBufferToString(Instr):
+    buffer_loc: Loc
 
 
 @dataclass
@@ -74,7 +80,7 @@ class Jump(Instr):
 
 @dataclass
 class Return(Instr):
-    value: Ref
+    """Return from stack frame; return value is implicitly the top-most temporary on the previous stack frame"""
 
 
 @dataclass

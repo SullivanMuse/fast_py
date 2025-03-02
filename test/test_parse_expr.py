@@ -1,600 +1,140 @@
 from parse import *
 
 
-def test_integer():
-    s = "1234"
-    node = IntExpr(Span(s, 0, len(s)))
-    assert integer(s) == Success(Span(s, len(s), len(s)), node), "Success"
+def expr_test(fn, passing, failing):
+    """Factory function for creating a bunch of expression parsing assertions"""
+    for s in passing:
+        assert fn(s), f"{fn.__name__} should parse {repr(s)}"
+        assert expr(s), f"{expr.__name__} should parse {repr(s)}"
 
-    s = ""
-    assert integer(s) == Error(Span(s, 0, None)), "Error"
+    for s in failing:
+        assert not fn(s), f"{f.__name__} should not parse {repr(s)}"
+
+
+def test_integer():
+    expr_test(
+        integer,
+        ["1234"],
+        [""],
+    )
 
 
 def test_float():
-    s = "123.456e789"
-    node = FloatExpr(Span(s, 0, len(s)))
-    assert float_expr(s) == Success(Span(s, len(s), len(s)), node), "Success"
-
-    s = "123"
-    assert float_expr(s) == Error(Span(s, 0, None)), "Error"
+    expr_test(float_expr, ["123.456e789", "123.456"], ["123"])
 
 
 def test_tag_expr():
-    s = ":asdf"
-    node = TagExpr(Span(s, 0, len(s)))
-    assert tag_expr(s) == Success(Span(s, len(s), len(s)), node), "Success"
-
-    s = ""
-    assert tag_expr(s) == Error(Span(s, 0, None)), "Error"
+    expr_test(
+        tag_expr,
+        [":asdf"],
+        [""],
+    )
 
 
 def test_id():
-    s = "asdf"
-    node = IdExpr(Span(s, 0, len(s)))
-    assert id(s) == Success(Span(s, len(s), len(s)), node), "Success"
-
-    s = "123"
-    assert id(s) == Error(Span(s, 0, None)), "Error"
-
-    s = ""
-    assert id(s) == Error(Span(s, 0, None)), "Error"
+    expr_test(
+        id,
+        ["asdf"],
+        ["123", ""],
+    )
 
 
 def test_string():
-    s = '"asdf\\""'
-    assert len(s) == 8
-    assert string(s) == Success(
-        Span(s, len(s), len(s)),
-        StringExpr(
-            Span(s, 0, len(s)),
-            None,
-            [Span(s, 1, 7)],
-            [],
-            Span(s, 0, 1),
-            Span(s, 7, len(s)),
-        ),
-    )
-
-    s = '"asdf\\"'
-    assert len(s) == 7
-    assert string(s) == Error(Span(s)), "Accidentally escaped delimiter"
-
-    s = 'asdf""'
-    print(f"{string(s) = }")
-    assert string(s), "Error"
-
-    assert string('""') == Success(
-        span=Span(string='""', start=2, stop=2),
-        val=StringExpr(
-            span=Span(string='""', start=0, stop=2),
-            fn=None,
-            chars=[Span(string='""', start=1, stop=1)],
-            interpolants=[],
-            lquote=Span(string='""', start=0, stop=1),
-            rquote=Span(string='""', start=1, stop=2),
-        ),
-    )
-
-    assert string('"x"') == Success(
-        span=Span(string='"x"', start=3, stop=3),
-        val=StringExpr(
-            span=Span(string='"x"', start=0, stop=3),
-            fn=None,
-            chars=[Span(string='"x"', start=1, stop=2)],
-            interpolants=[],
-            lquote=Span(string='"x"', start=0, stop=1),
-            rquote=Span(string='"x"', start=2, stop=3),
-        ),
-    )
-
-    assert string('"x{x}"') == Success(
-        span=Span(string='"x{x}"', start=6, stop=6),
-        val=StringExpr(
-            span=Span(string='"x{x}"', start=0, stop=6),
-            fn=None,
-            chars=[
-                Span(string='"x{x}"', start=1, stop=2),
-                Span(string='"x{x}"', start=5, stop=5),
-            ],
-            interpolants=[IdExpr(span=Span(string='"x{x}"', start=3, stop=4))],
-            lquote=Span(string='"x{x}"', start=0, stop=1),
-            rquote=Span(string='"x{x}"', start=5, stop=6),
-        ),
-    )
-
-    assert string('"x{x}x"') == Success(
-        span=Span(string='"x{x}x"', start=7, stop=7),
-        val=StringExpr(
-            span=Span(string='"x{x}x"', start=0, stop=7),
-            fn=None,
-            chars=[
-                Span(string='"x{x}x"', start=1, stop=2),
-                Span(string='"x{x}x"', start=5, stop=6),
-            ],
-            interpolants=[IdExpr(span=Span(string='"x{x}x"', start=3, stop=4))],
-            lquote=Span(string='"x{x}x"', start=0, stop=1),
-            rquote=Span(string='"x{x}x"', start=6, stop=7),
-        ),
-    )
-
-    assert string('"x{x}x{x}"') == Success(
-        span=Span(string='"x{x}x{x}"', start=10, stop=10),
-        val=StringExpr(
-            span=Span(string='"x{x}x{x}"', start=0, stop=10),
-            fn=None,
-            chars=[
-                Span(string='"x{x}x{x}"', start=1, stop=2),
-                Span(string='"x{x}x{x}"', start=5, stop=6),
-                Span(string='"x{x}x{x}"', start=9, stop=9),
-            ],
-            interpolants=[
-                IdExpr(span=Span(string='"x{x}x{x}"', start=3, stop=4)),
-                IdExpr(span=Span(string='"x{x}x{x}"', start=7, stop=8)),
-            ],
-            lquote=Span(string='"x{x}x{x}"', start=0, stop=1),
-            rquote=Span(string='"x{x}x{x}"', start=9, stop=10),
-        ),
-    )
-
-    assert string('"{x}x{x}"') == Success(
-        span=Span(string='"{x}x{x}"', start=9, stop=9),
-        val=StringExpr(
-            span=Span(string='"{x}x{x}"', start=0, stop=9),
-            fn=None,
-            chars=[
-                Span(string='"{x}x{x}"', start=1, stop=1),
-                Span(string='"{x}x{x}"', start=4, stop=5),
-                Span(string='"{x}x{x}"', start=8, stop=8),
-            ],
-            interpolants=[
-                IdExpr(span=Span(string='"{x}x{x}"', start=2, stop=3)),
-                IdExpr(span=Span(string='"{x}x{x}"', start=6, stop=7)),
-            ],
-            lquote=Span(string='"{x}x{x}"', start=0, stop=1),
-            rquote=Span(string='"{x}x{x}"', start=8, stop=9),
-        ),
+    expr_test(
+        string,
+        [
+            '"asdf\\""',
+            'asdf""',
+            '""',
+            '"x"',
+            '"x{x}"',
+            '"x{x}x"',
+            '"x{x}x{x}"',
+            '"{x}x{x}"',
+        ],
+        ['"asdf\\"'],
     )
 
 
 def test_array():
-    assert array("[]") == Success(
-        span=Span(string="[]", start=2, stop=2),
-        val=ArrayExpr(
-            span=Span(string="[]", start=0, stop=2),
-            lbracket=Span(string="[]", start=0, stop=1),
-            items=[],
-            rbracket=Span(string="[]", start=1, stop=2),
-        ),
-    )
-
-    assert array("[x]") == Success(
-        span=Span(string="[x]", start=3, stop=3),
-        val=ArrayExpr(
-            span=Span(string="[x]", start=0, stop=3),
-            lbracket=Span(string="[x]", start=0, stop=1),
-            items=[IdExpr(span=Span(string="[x]", start=1, stop=2))],
-            rbracket=Span(string="[x]", start=2, stop=3),
-        ),
-    )
-
-    assert array("[x,]") == Success(
-        span=Span(string="[x,]", start=4, stop=4),
-        val=ArrayExpr(
-            span=Span(string="[x,]", start=0, stop=4),
-            lbracket=Span(string="[x,]", start=0, stop=1),
-            items=[IdExpr(span=Span(string="[x,]", start=1, stop=2))],
-            rbracket=Span(string="[x,]", start=3, stop=4),
-        ),
-    )
-
-    assert array("[x, y]") == Success(
-        span=Span(string="[x, y]", start=6, stop=6),
-        val=ArrayExpr(
-            span=Span(string="[x, y]", start=0, stop=6),
-            lbracket=Span(string="[x, y]", start=0, stop=1),
-            items=[
-                IdExpr(span=Span(string="[x, y]", start=1, stop=2)),
-                IdExpr(span=Span(string="[x, y]", start=4, stop=5)),
-            ],
-            rbracket=Span(string="[x, y]", start=5, stop=6),
-        ),
-    )
-
-    assert array("[x, y, ..r]") == Error(
-        span=Span(string="[x, y, ..r]", start=0, stop=None), reason=None
-    )
-
-    assert array("[x, y, ...r]") == Success(
-        span=Span(string="[x, y, ...r]", start=12, stop=12),
-        val=ArrayExpr(
-            span=Span(string="[x, y, ...r]", start=0, stop=12),
-            lbracket=Span(string="[x, y, ...r]", start=0, stop=1),
-            items=[
-                IdExpr(span=Span(string="[x, y, ...r]", start=1, stop=2)),
-                IdExpr(span=Span(string="[x, y, ...r]", start=4, stop=5)),
-                Spread(
-                    span=Span(string="[x, y, ...r]", start=7, stop=11),
-                    ellipsis=Span(string="[x, y, ...r]", start=7, stop=10),
-                    inner=IdExpr(
-                        span=Span(string="[x, y, " "...r]", start=10, stop=11)
-                    ),
-                ),
-            ],
-            rbracket=Span(string="[x, y, ...r]", start=11, stop=12),
-        ),
-    )
-
-    assert array("[x, ...r,  y]") == Success(
-        span=Span(string="[x, ...r,  y]", start=13, stop=13),
-        val=ArrayExpr(
-            span=Span(string="[x, ...r,  y]", start=0, stop=13),
-            lbracket=Span(string="[x, ...r,  y]", start=0, stop=1),
-            items=[
-                IdExpr(span=Span(string="[x, ...r,  y]", start=1, stop=2)),
-                Spread(
-                    span=Span(string="[x, ...r,  y]", start=4, stop=8),
-                    ellipsis=Span(string="[x, ...r,  y]", start=4, stop=7),
-                    inner=IdExpr(span=Span(string="[x, ...r,  " "y]", start=7, stop=8)),
-                ),
-                IdExpr(span=Span(string="[x, ...r,  y]", start=11, stop=12)),
-            ],
-            rbracket=Span(string="[x, ...r,  y]", start=12, stop=13),
-        ),
-    )
-
-    assert array("[...r,  y]") == Success(
-        span=Span(string="[...r,  y]", start=10, stop=10),
-        val=ArrayExpr(
-            span=Span(string="[...r,  y]", start=0, stop=10),
-            lbracket=Span(string="[...r,  y]", start=0, stop=1),
-            items=[
-                Spread(
-                    span=Span(string="[...r,  y]", start=1, stop=5),
-                    ellipsis=Span(string="[...r,  y]", start=1, stop=4),
-                    inner=IdExpr(span=Span(string="[...r,  y]", start=4, stop=5)),
-                ),
-                IdExpr(span=Span(string="[...r,  y]", start=8, stop=9)),
-            ],
-            rbracket=Span(string="[...r,  y]", start=9, stop=10),
-        ),
-    )
-
-    assert array("[...r, y,]") == Success(
-        span=Span(string="[...r, y,]", start=10, stop=10),
-        val=ArrayExpr(
-            span=Span(string="[...r, y,]", start=0, stop=10),
-            lbracket=Span(string="[...r, y,]", start=0, stop=1),
-            items=[
-                Spread(
-                    span=Span(string="[...r, y,]", start=1, stop=5),
-                    ellipsis=Span(string="[...r, y,]", start=1, stop=4),
-                    inner=IdExpr(span=Span(string="[...r, y,]", start=4, stop=5)),
-                ),
-                IdExpr(span=Span(string="[...r, y,]", start=7, stop=8)),
-            ],
-            rbracket=Span(string="[...r, y,]", start=9, stop=10),
-        ),
-    )
-
-    assert array("[ ...r, y, ]") == Success(
-        span=Span(string="[ ...r, y, ]", start=12, stop=12),
-        val=ArrayExpr(
-            span=Span(string="[ ...r, y, ]", start=0, stop=12),
-            lbracket=Span(string="[ ...r, y, ]", start=0, stop=1),
-            items=[
-                Spread(
-                    span=Span(string="[ ...r, y, ]", start=2, stop=6),
-                    ellipsis=Span(string="[ ...r, y, ]", start=2, stop=5),
-                    inner=IdExpr(span=Span(string="[ ...r, y, " "]", start=5, stop=6)),
-                ),
-                IdExpr(span=Span(string="[ ...r, y, ]", start=8, stop=9)),
-            ],
-            rbracket=Span(string="[ ...r, y, ]", start=11, stop=12),
-        ),
+    expr_test(
+        array,
+        [
+            "[]",
+            "[x]",
+            "[x,]",
+            "[x, y]",
+            "[x, y, ...r]",
+            "[x, ...r,  y]",
+            "[...r,  y]",
+            "[...r, y,]",
+            "[ ...r, y, ]",
+        ],
+        ["[x, y, ..r]"],
     )
 
 
 def test_fn():
-    assert fn("fn() x") == Success(
-        span=Span(string="fn() x", start=6, stop=6),
-        val=FnExpr(
-            span=Span(string="fn() x", start=0, stop=6),
-            fn_token=Span(string="fn() x", start=0, stop=2),
-            lpar=Span(string="fn() x", start=2, stop=3),
-            params=[],
-            rpar=Span(string="fn() x", start=3, stop=4),
-            inner=IdExpr(span=Span(string="fn() x", start=5, stop=6)),
-        ),
-    )
-
-    assert fn("fn(x) x") == Success(
-        span=Span(string="fn(x) x", start=7, stop=7),
-        val=FnExpr(
-            span=Span(string="fn(x) x", start=0, stop=7),
-            fn_token=Span(string="fn(x) x", start=0, stop=2),
-            lpar=Span(string="fn(x) x", start=2, stop=3),
-            params=[
-                IdPattern(
-                    span=Span(string="fn(x) x", start=3, stop=4),
-                    name=Span(string="fn(x) x", start=3, stop=4),
-                    at_token=None,
-                    inner=None,
-                )
-            ],
-            rpar=Span(string="fn(x) x", start=4, stop=5),
-            inner=IdExpr(span=Span(string="fn(x) x", start=6, stop=7)),
-        ),
-    )
-
-    assert fn("fn(x,) x") == Success(
-        span=Span(string="fn(x,) x", start=8, stop=8),
-        val=FnExpr(
-            span=Span(string="fn(x,) x", start=0, stop=8),
-            fn_token=Span(string="fn(x,) x", start=0, stop=2),
-            lpar=Span(string="fn(x,) x", start=2, stop=3),
-            params=[
-                IdPattern(
-                    span=Span(string="fn(x,) x", start=3, stop=4),
-                    name=Span(string="fn(x,) x", start=3, stop=4),
-                    at_token=None,
-                    inner=None,
-                )
-            ],
-            rpar=Span(string="fn(x,) x", start=5, stop=6),
-            inner=IdExpr(span=Span(string="fn(x,) x", start=7, stop=8)),
-        ),
-    )
-
-    assert fn("fn(x,y) x") == Success(
-        span=Span(string="fn(x,y) x", start=9, stop=9),
-        val=FnExpr(
-            span=Span(string="fn(x,y) x", start=0, stop=9),
-            fn_token=Span(string="fn(x,y) x", start=0, stop=2),
-            lpar=Span(string="fn(x,y) x", start=2, stop=3),
-            params=[
-                IdPattern(
-                    span=Span(string="fn(x,y) x", start=3, stop=4),
-                    name=Span(string="fn(x,y) x", start=3, stop=4),
-                    at_token=None,
-                    inner=None,
-                ),
-                IdPattern(
-                    span=Span(string="fn(x,y) x", start=5, stop=6),
-                    name=Span(string="fn(x,y) x", start=5, stop=6),
-                    at_token=None,
-                    inner=None,
-                ),
-            ],
-            rpar=Span(string="fn(x,y) x", start=6, stop=7),
-            inner=IdExpr(span=Span(string="fn(x,y) x", start=8, stop=9)),
-        ),
-    )
-
-    assert fn("fn(x,y,) x") == Success(
-        span=Span(string="fn(x,y,) x", start=10, stop=10),
-        val=FnExpr(
-            span=Span(string="fn(x,y,) x", start=0, stop=10),
-            fn_token=Span(string="fn(x,y,) x", start=0, stop=2),
-            lpar=Span(string="fn(x,y,) x", start=2, stop=3),
-            params=[
-                IdPattern(
-                    span=Span(string="fn(x,y,) x", start=3, stop=4),
-                    name=Span(string="fn(x,y,) x", start=3, stop=4),
-                    at_token=None,
-                    inner=None,
-                ),
-                IdPattern(
-                    span=Span(string="fn(x,y,) x", start=5, stop=6),
-                    name=Span(string="fn(x,y,) x", start=5, stop=6),
-                    at_token=None,
-                    inner=None,
-                ),
-            ],
-            rpar=Span(string="fn(x,y,) x", start=7, stop=8),
-            inner=IdExpr(span=Span(string="fn(x,y,) x", start=9, stop=10)),
-        ),
-    )
-
-    assert fn("fn( x , y , ) x") == Success(
-        span=Span(string="fn( x , y , ) x", start=15, stop=15),
-        val=FnExpr(
-            span=Span(string="fn( x , y , ) x", start=0, stop=15),
-            fn_token=Span(string="fn( x , y , ) x", start=0, stop=2),
-            lpar=Span(string="fn( x , y , ) x", start=2, stop=3),
-            params=[
-                IdPattern(
-                    span=Span(string="fn( x , y , ) x", start=4, stop=5),
-                    name=Span(string="fn( x , y , ) x", start=4, stop=5),
-                    at_token=None,
-                    inner=None,
-                ),
-                IdPattern(
-                    span=Span(string="fn( x , y , ) x", start=8, stop=9),
-                    name=Span(string="fn( x , y , ) x", start=8, stop=9),
-                    at_token=None,
-                    inner=None,
-                ),
-            ],
-            rpar=Span(string="fn( x , y , ) x", start=12, stop=13),
-            inner=IdExpr(span=Span(string="fn( x , y , ) x", start=14, stop=15)),
-        ),
-    )
-
-    # errors:
-    assert fn("") == Error(span=Span(string="", start=0, stop=None), reason=None)
-
-    assert fn("fn()") == Error(
-        span=Span(string="fn()", start=0, stop=None), reason=None
-    )
-
-    assert fn("fn(,)") == Error(
-        span=Span(string="fn(,)", start=0, stop=None), reason=None
-    )
-
-    assert fn("fn(,x)") == Error(
-        span=Span(string="fn(,x)", start=0, stop=None), reason=None
+    expr_test(
+        fn,
+        ["fn() x", "fn(x) x", "fn(x,) x", "fn(x,y) x", "fn(x,y,) x", "fn( x , y , ) x"],
+        ["", "fn()", "fn(,)", "fn(,x)"],
     )
 
 
 def test_call():
-    s = "f()"
-    assert call(s)
-
-    s = "f(x, y, z)"
-    assert call(s)
-
-    s = "f(x, y, z,)"
-    assert call(s)
-
-    s = "f ( x , y , z , )"
-    assert call(s)
-
-    # errors
-    s = ""
-    assert not call(s)
-
-    s = "f"
-    assert not call(s)
-
-    s = "f f"
-    assert not call(s)
+    expr_test(
+        call,
+        [
+            "f()",
+            "f(x, y, z)",
+            "f(x, y, z,)",
+            "f ( x , y , z , )",
+        ],
+        ["", "f", "f f"],
+    )
 
 
 def test_index():
-    s = "f[]"
-    assert index(s)
-
-    s = "f[x, y, z]"
-    assert index(s)
-
-    s = "f[x, y, z,]"
-    assert index(s)
-
-    s = "f [ x , y , z , ]"
-    assert index(s)
-
-    # errors
-    s = ""
-    assert not index(s)
-
-    s = "f"
-    assert not index(s)
-
-    s = "f f"
-    assert not index(s)
+    expr_test(
+        index,
+        [
+            "f[]",
+            "f[x, y, z]",
+            "f[x, y, z,]",
+            "f [ x , y , z , ]",
+        ],
+        ["", "f", "f f"],
+    )
 
 
 def test_loop_expr():
-    s = ""
-    assert not loop_expr(s)
-
-    s = "loop"
-    assert not loop_expr(s)
-
-    s = "loop {"
-    assert not loop_expr(s)
-
-    s = "loop }"
-    assert not loop_expr(s)
-
-    s = "loop {}"
-    assert loop_expr(s)
-
-    s = "loop {x; y}"
-    assert loop_expr(s)
+    expr_test(
+        loop_expr,
+        ["loop {}", "loop {x; y}"],
+        ["", "loop", "loop {", "loop }"],
+    )
 
 
 def test_match_expr():
-    s = ""
-    assert not match_expr(s)
-
-    s = "match"
-    assert not match_expr(s)
-
-    s = "match {"
-    assert not match_expr(s)
-
-    s = "match }"
-    assert not match_expr(s)
-
-    s = "match x {}"
-    assert match_expr(s)
-
-    s = "match x { x -> x , x -> y }"
-    assert match_expr(s)
-
-    s = "match x{x->x,x->y}"
-    assert match_expr(s)
+    expr_test(
+        match_expr,
+        ["match x {}", "match x { x -> x , x -> y }", "match x{x->x,x->y}"],
+        ["", "match", "match {", "match }"],
+    )
 
 
 def test_block():
-    # success
-    assert block("{}") == Success(
-        span=Span(string="{}", start=2, stop=2),
-        val=BlockExpr(
-            span=Span(string="{}", start=0, stop=2),
-            lbrace=Span(string="{}", start=0, stop=1),
-            statements=[],
-            rbrace=Span(string="{}", start=1, stop=2),
-        ),
+    expr_test(
+        block,
+        ["{}", "{x}", "{x;y}", "{x;y;}", "{ x ; y ; }"],
+        ["", "{;}", "{;x}"],
     )
-
-    assert block("{x}") == Success(
-        span=Span(string="{x}", start=3, stop=3),
-        val=BlockExpr(
-            span=Span(string="{x}", start=0, stop=3),
-            lbrace=Span(string="{x}", start=0, stop=1),
-            statements=[
-                ExprStatement(
-                    span=Span(string="{x}", start=1, stop=2),
-                    semi_token=None,
-                    inner=IdExpr(span=Span(string="{x}", start=1, stop=2)),
-                )
-            ],
-            rbrace=Span(string="{x}", start=2, stop=3),
-        ),
-    )
-
-    s = "{x;y}"
-    assert block(s)
-
-    s = "{x;y;}"
-    assert block(s)
-
-    s = "{ x ; y ; }"
-    assert block(s)
-
-    # errors
-    s = ""
-    assert not block(s)
-
-    s = "{;}"
-    assert not block(s)
-
-    s = "{;x}"
-    assert not block(s)
 
 
 def test_paren():
-    s = "(x)"
-    assert paren(s) == Success(
-        Span(s, len(s), len(s)),
-        ParenExpr(
-            span=Span(s, 0, len(s)),
-            lpar=Span(s, 0, 1),
-            inner=IdExpr(Span(s, 1, 2)),
-            rpar=Span(s, 2, 3),
-        ),
-    )
+    expr_test(paren, ["(x)"], [])
 
 
 def test_spread():
-    s = "...r"
-    assert spread(s) == Success(
-        Span(s, len(s), len(s)),
-        Spread(
-            span=Span(s, 0, len(s)),
-            ellipsis=Span(s, 0, 3),
-            inner=IdExpr(Span(s, 3, 4)),
-        ),
-    )
+    expr_test(spread, ["...r"], [])

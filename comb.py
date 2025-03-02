@@ -75,6 +75,7 @@ class Fail(Result):
 class Parser:
     f: Optional[Callable[[Span], Result]] = None
     ignore: bool = False
+    name: Optional[str] = None
 
     @classmethod
     def recursive(cls, f):
@@ -94,6 +95,10 @@ class Parser:
         if not isinstance(s, Span):
             raise TypeError
         return self.f(s)
+
+    @property
+    def __name__(self):
+        return self.name or self.f.__name__
 
 
 def tag(m):

@@ -14,6 +14,8 @@ from instr import (
     Pop,
     Push,
     Ref,
+    StringBufferPush,
+    StringBufferToString,
 )
 from parse import statements
 from tree import (
@@ -27,6 +29,7 @@ from tree import (
     ExprStatement,
     FloatExpr,
     FnExpr,
+    FnStatement,
     GatherPattern,
     IdExpr,
     IdPattern,
@@ -119,6 +122,12 @@ class Compiler:
             case Pop():
                 self.scope.pop()
 
+            case StringBufferPush():
+                pass
+
+            case StringBufferToString():
+                ix = self.scope.push()
+
             case _:
                 raise NotImplementedError(f"`Compiler.push({type(instr).__name__})`")
 
@@ -178,6 +187,9 @@ class Compiler:
                 ix = self.compile_pattern(statement.pattern)
                 # return self.push(Assert(Loc(ix), "irrefutable bind failure"))
 
+            case FnStatement():
+                pass
+
             case _:
                 raise NotImplementedError(
                     f"`Compiler.compile_statement({type(statement)})`"
@@ -217,29 +229,60 @@ class Compiler:
         """
         print(f"`Compiler.compile_expr({type(expr)})`")
         match expr:
-            case IdExpr(span):
-                name = span.str()
+            case IdExpr():
+                name = expr.span.str()
                 item_loc = self.scope[name]
                 instr = Push(item_loc)
                 return self.push(instr)
 
-            case IntExpr(span):
-                value = Int(int(span.str()))
+            case IntExpr():
+                value = Int(int(expr.span.str()))
                 instr = Push(Ref.Imm(value))
                 return self.push(instr)
 
-            case TagExpr(_, name):
-                value = Tag(name.str())
+            case TagExpr():
+                value = Tag(expr.span.string)
                 instr = Push(Ref.Imm(value))
                 return self.push(instr)
 
-            case FloatExpr(span):
-                value = Float(float(span.str()))
+            case FloatExpr():
+                value = Float(float(expr.span.str()))
                 instr = Push(Ref.Imm(value))
                 return self.push(instr)
 
-            case StringExpr(_, fn, items, _, _):
-                raise NotImplementedError
+            case StringExpr():
+                # in the special case that there is only one char and no interpolants, simply create the value in-place
+                value = String(expr.chars[0])
+                instr = Push(Ref.Imm(value))
+                ix = self.push(instr)
+
+                # For the rest of the interpolants and the chars following them:
+                if len(expr.interpolants):
+                    instr = Push(Ref.Imm(StringBuffer([ix])))
+                    buf_ix = self.push(instr)
+
+                    for interpolant, char in zip(expr.interpolants, expr.chars[1:]):
+                        # Compile interpolant
+                        interp_ix = self.compile_expr(interpolant)
+                        instr = StringBufferPush(buf_ix, interp_ix)
+                        self.push(instr)
+
+                        # Compile char
+                        instr = Push(Ref.Imm(String(char)))
+                        piece_ix = self.push(instr)
+                        instr = StringBufferPush(buf_ix, piece_ix)
+                        self.push(instr)
+
+                    instr = StringBufferToString(buf_ix)
+                    ix = self.push(instr)
+
+                # apply fn
+                if expr.fn is not None:
+                    fn_ix = self.compile_expr(expr.fn)
+                    instr = Call(Ref.Loc(fn_ix))
+                    ix = self.push(instr)
+
+                return ix
 
             case ArrayExpr(span, _, items, _):
                 instr = Push(Array([None * len(items)]))

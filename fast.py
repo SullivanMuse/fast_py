@@ -4,7 +4,7 @@ import argparse
 
 import colors
 from compile import Compiler
-from parse_statements import statements
+from parse import statements
 
 
 def parse(args):

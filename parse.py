@@ -1,9 +1,9 @@
 from comb import *
 from tree import *
 
-statements = Parser()
-expr = Parser()
-pattern = Parser()
+statements = Parser(name="statements")
+expr = Parser(name="expr")
+pattern = Parser(name="pattern")
 
 #
 # common
@@ -55,7 +55,7 @@ fraction = map(seq(".", dec_run), lambda span, _: span)
 exponent = map(seq("e", opt("-"), dec_run), lambda span, _: span)
 s = seq(dec_run, opt(fraction), opt(exponent))
 float_expr = map(
-    pred(s, lambda x: not (x[1] is None or x[2] is None)),
+    pred(s, lambda x: not (x[1] is None and x[2] is None)),
     lambda span, _: FloatExpr(span),
 )
 
@@ -128,9 +128,9 @@ match_expr = starmap(
 )
 loop_expr = starmap(seq("loop", ws, "{", ws, statements, ws, "}"), LoopExpr)
 
-atom.f = alt(integer, float_expr, string, id, tag_expr, array, paren, spread, block, fn)
+atom.f = alt(float_expr, integer, string, id, tag_expr, array, paren, spread, block, fn)
 
-expr.f = alt(atom, call, index)
+expr.f = alt(loop_expr, call, index, atom)
 
 #
 # pattern
