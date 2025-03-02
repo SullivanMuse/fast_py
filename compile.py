@@ -241,7 +241,7 @@ class Compiler:
                 return self.push(instr)
 
             case TagExpr():
-                value = Tag(expr.span.string)
+                value = Tag(expr.span.str())
                 instr = Push(Ref.Imm(value))
                 return self.push(instr)
 
@@ -252,7 +252,7 @@ class Compiler:
 
             case StringExpr():
                 # in the special case that there is only one char and no interpolants, simply create the value in-place
-                value = String(expr.chars[0].string)
+                value = String(expr.chars[0].str())
                 instr = Push(Ref.Imm(value))
                 ix = self.push(instr)
 
@@ -268,7 +268,7 @@ class Compiler:
                         self.push(instr)
 
                         # Compile char
-                        instr = Push(Ref.Imm(String(char.string)))
+                        instr = Push(Ref.Imm(String(char.str())))
                         piece_ix = self.push(instr)
                         instr = StringBufferPush(buf_ix, piece_ix)
                         self.push(instr)
