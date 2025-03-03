@@ -5,7 +5,7 @@ from instr import (
     Assert,
     Call,
     Imm,
-    Loc,
+    Local,
     Push,
     StringBufferPush,
     StringBufferToString,
@@ -52,24 +52,24 @@ def test_compile_string():
         '"asdf{123}asdf"',
         [
             Push(value=Imm(value=String(value="asdf"))),
-            Push(value=Imm(value=StringBuffer(pieces=[Loc(index=0)]))),
+            Push(value=Imm(value=StringBuffer(pieces=[Local(index=0)]))),
             Push(value=Imm(value=Int(value=123))),
-            StringBufferPush(buffer_loc=Loc(index=1), piece=Loc(index=2)),
+            StringBufferPush(buffer_loc=Local(index=1), piece=Local(index=2)),
             Push(value=Imm(value=String(value="asdf"))),
-            StringBufferPush(buffer_loc=Loc(index=1), piece=Loc(index=3)),
-            StringBufferToString(buffer_loc=Loc(index=1)),
+            StringBufferPush(buffer_loc=Local(index=1), piece=Local(index=3)),
+            StringBufferToString(buffer_loc=Local(index=1)),
         ],
     )
     code_test(
         '"asdf{"asdf"}asdf"',
         [
             Push(value=Imm(value=String(value="asdf"))),
-            Push(value=Imm(value=StringBuffer(pieces=[Loc(index=0)]))),
+            Push(value=Imm(value=StringBuffer(pieces=[Local(index=0)]))),
             Push(value=Imm(value=String(value="asdf"))),
-            StringBufferPush(buffer_loc=Loc(index=1), piece=Loc(index=2)),
+            StringBufferPush(buffer_loc=Local(index=1), piece=Local(index=2)),
             Push(value=Imm(value=String(value="asdf"))),
-            StringBufferPush(buffer_loc=Loc(index=1), piece=Loc(index=3)),
-            StringBufferToString(buffer_loc=Loc(index=1)),
+            StringBufferPush(buffer_loc=Local(index=1), piece=Local(index=3)),
+            StringBufferToString(buffer_loc=Local(index=1)),
         ],
     )
     code_test(
@@ -77,10 +77,10 @@ def test_compile_string():
         [
             Push(value=Imm(value=Int(value=12))),
             Push(value=Bool(value=True)),
-            Assert(value=Loc(index=1), reason="Irrefutable pattern: IdPattern 4:5 'x'"),
+            Assert(value=Local(index=1), reason="Irrefutable pattern: IdPattern 4:5 'x'"),
             Push(value=Imm(value=String(value="Hello"))),
-            Push(value=Loc(index=0)),
-            Call(closure=Loc(index=0)),
+            Push(value=Local(index=0)),
+            Call(closure=Local(index=0)),
         ],
     )
 
@@ -91,10 +91,10 @@ def test_compile_array():
         [
             Push(value=Array(values=[None, None, None])),
             Push(value=Imm(value=Int(value=1))),
-            ArrayPush(array=Loc(index=0), value=Loc(index=1)),
+            ArrayPush(array=Local(index=0), value=Local(index=1)),
             Push(value=Imm(value=Int(value=2))),
-            ArrayPush(array=Loc(index=0), value=Loc(index=1)),
+            ArrayPush(array=Local(index=0), value=Local(index=1)),
             Push(value=Imm(value=Int(value=3))),
-            ArrayPush(array=Loc(index=0), value=Loc(index=1)),
+            ArrayPush(array=Local(index=0), value=Local(index=1)),
         ],
     )

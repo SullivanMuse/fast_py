@@ -8,7 +8,7 @@ from instr import (
     Imm,
     Instr,
     Jump,
-    Loc,
+    Local,
     Pop,
     Push,
     Return,
@@ -35,7 +35,7 @@ class Vm:
             case Imm(value):
                 return value
 
-            case Loc(ix):
+            case Local(ix):
                 return self.frame[ix]
 
             case _:

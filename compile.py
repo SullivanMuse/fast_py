@@ -9,7 +9,7 @@ from instr import (
     Call,
     ClosureNew,
     Jump,
-    Loc,
+    Local,
     MatchArray,
     Pop,
     Push,
@@ -53,10 +53,10 @@ from value import *
 @dataclass
 class Scope:
     prev: Optional["Scope"] = None
-    map: dict[str, Loc] = field(default_factory=dict)
+    map: dict[str, Local] = field(default_factory=dict)
     depth: int = 0
 
-    def __getitem__(self, key) -> Loc:
+    def __getitem__(self, key) -> Local:
         try:
             return self.map[key]
         except KeyError:
@@ -67,7 +67,7 @@ class Scope:
     def __setitem__(self, key, value):
         self.map[key] = value
 
-    def push(self) -> Loc:
+    def push(self) -> Local:
         self.depth += 1
         return self.top()
 
@@ -75,9 +75,9 @@ class Scope:
         """Reduce stack depth"""
         self.depth -= 1
 
-    def top(self) -> Loc:
+    def top(self) -> Local:
         if self.depth != 0:
-            return Loc(self.depth - 1)
+            return Local(self.depth - 1)
 
 
 @dataclass
@@ -85,7 +85,7 @@ class Compiler:
     scope: Scope = field(default_factory=Scope)
     code: list[SyntaxNode] = field(default_factory=list)
 
-    def push(self, instr: Instr) -> Optional[Loc]:
+    def push(self, instr: Instr) -> Optional[Local]:
         """Push the instruction into the code object
 
         Args:
@@ -136,7 +136,7 @@ class Compiler:
 
         return ix
 
-    def compile_pattern(self, pattern: Pattern, irrefutable=False) -> Loc:
+    def compile_pattern(self, pattern: Pattern, irrefutable=False) -> Local:
         """Attempts to match the value on the top of the stack
 
         Args:
@@ -169,7 +169,7 @@ class Compiler:
                     f"`Compiler.compile_pattern({type(pattern).__name__})`"
                 )
 
-    def compile_statement(self, statement: Statement) -> Optional[Loc]:
+    def compile_statement(self, statement: Statement) -> Optional[Local]:
         """Compile the statement
 
         Args:
@@ -200,7 +200,7 @@ class Compiler:
                     f"`Compiler.compile_statement({type(statement)})`"
                 )
 
-    def compile_statements(self, statements: list[Statement]) -> Optional[Loc]:
+    def compile_statements(self, statements: list[Statement]) -> Optional[Local]:
         """Compile a series of statements
 
         Args:
@@ -219,7 +219,7 @@ class Compiler:
         self.scope = self.scope.prev
         return result
 
-    def compile_expr(self, expr: Expr) -> Loc:
+    def compile_expr(self, expr: Expr) -> Local:
         """Compile the expression
 
         Args:

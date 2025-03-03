@@ -21,7 +21,9 @@ class Imm(Ref, FormatNode):
 
 
 @dataclass
-class Loc(Ref, FormatNode):
+class Local(Ref, FormatNode):
+    """Local variable"""
+
     index: int
 
     def short(self):
@@ -54,19 +56,19 @@ class ArrayPush(Instr):
 
 @dataclass
 class ArrayExtend(Instr):
-    array_loc: Loc
+    array_loc: Local
     item_ref: Ref
 
 
 @dataclass
 class StringBufferPush(Instr):
-    buffer_loc: Loc
-    piece: Loc
+    buffer_loc: Local
+    piece: Local
 
 
 @dataclass
 class StringBufferToString(Instr):
-    buffer_loc: Loc
+    buffer_loc: Local
 
 
 @dataclass
