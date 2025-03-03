@@ -290,7 +290,7 @@ class Compiler:
                 return ix
 
             case ArrayExpr(span, _, items, _):
-                instr = Push(Array([None * len(items)]))
+                instr = Push(Array([None] * len(items)))
                 array_loc = self.push(instr)
                 for item in items:
                     match item:

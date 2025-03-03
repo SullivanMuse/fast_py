@@ -1,7 +1,26 @@
 from comb import Span
 from compile import compile
-from instr import Assert, Call, Imm, Loc, Push, StringBufferPush, StringBufferToString
-from value import Bool, Closure, ClosureSpec, Float, Int, String, StringBuffer, Tag
+from instr import (
+    ArrayPush,
+    Assert,
+    Call,
+    Imm,
+    Loc,
+    Push,
+    StringBufferPush,
+    StringBufferToString,
+)
+from value import (
+    Array,
+    Bool,
+    Closure,
+    ClosureSpec,
+    Float,
+    Int,
+    String,
+    StringBuffer,
+    Tag,
+)
 
 
 def code_test(expr, code, message=None):
@@ -62,5 +81,20 @@ def test_compile_string():
             Push(value=Imm(value=String(value="Hello"))),
             Push(value=Loc(index=0)),
             Call(closure=Loc(index=0)),
+        ],
+    )
+
+
+def test_compile_array():
+    code_test(
+        "[1, 2, 3]",
+        [
+            Push(value=Array(values=[None, None, None])),
+            Push(value=Imm(value=Int(value=1))),
+            ArrayPush(array=Loc(index=0), value=Loc(index=1)),
+            Push(value=Imm(value=Int(value=2))),
+            ArrayPush(array=Loc(index=0), value=Loc(index=1)),
+            Push(value=Imm(value=Int(value=3))),
+            ArrayPush(array=Loc(index=0), value=Loc(index=1)),
         ],
     )
