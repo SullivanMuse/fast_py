@@ -1,6 +1,7 @@
 from comb import Span
 from compile import compile
 from instr import (
+    ArrayExtend,
     ArrayPush,
     Assert,
     Call,
@@ -77,7 +78,9 @@ def test_compile_string():
         [
             Push(value=Imm(value=Int(value=12))),
             Push(value=Bool(value=True)),
-            Assert(value=Local(index=1), reason="Irrefutable pattern: IdPattern 4:5 'x'"),
+            Assert(
+                value=Local(index=1), reason="Irrefutable pattern: IdPattern 4:5 'x'"
+            ),
             Push(value=Imm(value=String(value="Hello"))),
             Push(value=Local(index=0)),
             Call(closure=Local(index=0)),
@@ -96,5 +99,22 @@ def test_compile_array():
             ArrayPush(array=Local(index=0), value=Local(index=1)),
             Push(value=Imm(value=Int(value=3))),
             ArrayPush(array=Local(index=0), value=Local(index=1)),
+        ],
+    )
+
+    code_test(
+        "[1, 2, ...[3, 4]]",
+        [
+            Push(value=Array(values=[None, None, None])),
+            Push(value=Imm(value=Int(value=1))),
+            ArrayPush(array=Local(index=0), value=Local(index=1)),
+            Push(value=Imm(value=Int(value=2))),
+            ArrayPush(array=Local(index=0), value=Local(index=1)),
+            Push(value=Array(values=[None, None])),
+            Push(value=Imm(value=Int(value=3))),
+            ArrayPush(array=Local(index=1), value=Local(index=2)),
+            Push(value=Imm(value=Int(value=4))),
+            ArrayPush(array=Local(index=1), value=Local(index=2)),
+            ArrayExtend(array_loc=Local(index=0), item_ref=Local(index=1)),
         ],
     )

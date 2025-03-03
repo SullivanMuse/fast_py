@@ -289,13 +289,13 @@ class Compiler:
 
                 return ix
 
-            case ArrayExpr(span, _, items, _):
-                instr = Push(Array([None] * len(items)))
+            case ArrayExpr():
+                instr = Push(Array([None] * len(expr.items)))
                 array_loc = self.push(instr)
-                for item in items:
+                for item in expr.items:
                     match item:
-                        case Spread(span, ellipsis, inner):
-                            item_loc = self.compile_expr(item)
+                        case Spread():
+                            item_loc = self.compile_expr(item.inner)
                             instr = ArrayExtend(array_loc, item_loc)
 
                         case _:
@@ -304,7 +304,7 @@ class Compiler:
                     self.push(instr)
                 return array_loc
 
-            case Spread(_, _, _):
+            case Spread():
                 raise CompileError("Spread expression outside of array literal")
 
             case ParenExpr(_, inner):
