@@ -130,7 +130,7 @@ loop_expr = starmap(seq("loop", ws, "{", ws, statements, ws, "}"), LoopExpr)
 
 atom.f = alt(float_expr, integer, string, id, tag_expr, array, paren, spread, block, fn)
 
-expr.f = alt(loop_expr, call, index, atom)
+expr.f = alt(loop_expr, match_expr, call, index, atom)
 
 #
 # pattern

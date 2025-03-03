@@ -307,8 +307,8 @@ class Compiler:
             case Spread():
                 raise CompileError("Spread expression outside of array literal")
 
-            case ParenExpr(_, inner):
-                return self.compile_expr(inner)
+            case ParenExpr():
+                return self.compile_expr(expr.inner)
 
             case FnExpr(span, params, inner):
                 # Compute free variables

@@ -6,6 +6,7 @@ def expr_test(fn, passing, failing):
     for s in passing:
         assert fn(s), f"{fn.__name__} should parse {repr(s)}"
         assert expr(s), f"{expr.__name__} should parse {repr(s)}"
+        assert expr(f"({s})"), f"{expr.__name__} should parse {repr(f'({s})')}"
 
     for s in failing:
         assert not fn(s), f"{f.__name__} should not parse {repr(s)}"

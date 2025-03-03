@@ -24,13 +24,16 @@ from value import (
 )
 
 
-def code_test(expr, code, message=None):
+def code_test(expr, code, message=None, depth=1, is_expr=True):
     result = compile(expr)
     if message is None:
         message = f"{expr} should compile to {code}"
     assert result == Closure(
         spec=ClosureSpec(code=code, n_args=0, capture_indices=[]), captures=[]
     ), message
+
+    if is_expr and depth != 0:
+        code_test(f"({expr})", code, depth=depth - 1)
 
 
 def test_compile_int():
@@ -85,6 +88,7 @@ def test_compile_string():
             Push(value=Local(index=0)),
             Call(closure=Local(index=0)),
         ],
+        is_expr=False,
     )
 
 
