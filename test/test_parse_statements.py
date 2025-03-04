@@ -1,7 +1,20 @@
 from parse import *
+from tree import *
+
+
+def parses_to(s, cls):
+    result = statement(s)
+    print(f"{result = }")
+    assert result, f"`{s}` parses"
+    assert type(result.val) is cls, f"`{s}` has type `{cls.__name__}`"
+
+
+def fails_parse(s):
+    assert not statement(s), f"`{s}` fails to parse"
 
 
 def test_label():
+
     s = "'label"
     assert label(s)
 
@@ -9,169 +22,74 @@ def test_label():
     assert label(s)
 
     # errors
-    s = "'"
-    assert not label(s)
-
-    s = ""
-    assert not label(s)
+    fails_parse("'")
+    fails_parse("")
 
 
 def test_expr_statement():
-    s = "x"
-    assert expr_statement(s)
-
-    s = ""
-    assert not expr_statement(s)
+    parses_to("x", ExprStatement)
+    fails_parse("")
 
 
 def test_return_statement():
-    s = "return"
-    assert return_statement(s)
-
-    s = "return x"
-    assert return_statement(s)
-
-    s = ""
-    assert not return_statement(s)
+    parses_to("return", ReturnStatement)
+    parses_to("return x", ReturnStatement)
+    fails_parse("")
 
 
 def test_continue_statement():
-    s = "continue"
-    assert continue_statement(s)
-
-    s = "continue 'outer"
-    assert continue_statement(s)
-
-    s = ""
-    assert not continue_statement(s)
-
-    s = "'outer x"
-    assert not continue_statement(s)
-
-    s = "cont"
-    assert not continue_statement(s)
+    parses_to("continue", ContinueStatement)
+    parses_to("continue 'outer", ContinueStatement)
+    fails_parse("")
+    fails_parse("'outer x")
 
 
 def test_break_statement():
-    s = "break"
-    assert break_statement(s)
-
-    s = "break 'outer"
-    assert break_statement(s)
-
-    s = "break x"
-    assert break_statement(s)
-
-    s = "break 'outer x"
-    assert break_statement(s)
-
-    s = ""
-    assert not break_statement(s)
-
-    s = "'outer x"
-    assert not break_statement(s)
-
-    s = "cont"
-    assert not break_statement(s)
+    parses_to("break", BreakStatement)
+    parses_to("break 'outer", BreakStatement)
+    parses_to("break 'outer x", BreakStatement)
+    fails_parse("")
+    fails_parse("'outer x")
 
 
 def test_loop_statement():
-    s = ""
-    assert not loop_statement(s)
-
-    s = "loop"
-    assert not loop_statement(s)
-
-    s = "loop {"
-    assert not loop_statement(s)
-
-    s = "loop }"
-    assert not loop_statement(s)
-
-    s = "loop {}"
-    assert loop_statement(s)
-
-    s = "loop {x; y}"
-    assert loop_statement(s)
+    fails_parse("")
+    fails_parse("loop")
+    fails_parse("loop {")
+    fails_parse("loop }")
+    parses_to("loop {}", LoopStatement)
+    parses_to("loop {x; y}", LoopStatement)
 
 
 def test_match_statement():
-    s = ""
-    assert not match_statement(s)
-
-    s = "match"
-    assert not match_statement(s)
-
-    s = "match {"
-    assert not match_statement(s)
-
-    s = "match }"
-    assert not match_statement(s)
-
-    s = "match x {}"
-    assert match_statement(s)
-
-    s = "match x { x -> x , x -> y }"
-    assert match_statement(s)
-
-    s = "match x{x->x,x->y}"
-    assert match_statement(s)
+    fails_parse("")
+    fails_parse("match")
+    fails_parse("match {")
+    fails_parse("match }")
+    parses_to("match x {}", MatchStatement)
+    parses_to("match x { x -> x , x -> y }", MatchStatement)
+    parses_to("match x{x->x,x->y}", MatchStatement)
 
 
 def test_fn_statement():
-    s = "fn name() {}"
-    assert fn_statement(s)
-
-    s = "fn name(x) {}"
-    assert fn_statement(s)
-
-    s = "fn name(x, y) {}"
-    assert fn_statement(s)
-
-    s = "fn name ( x , y , ) { }"
-    assert fn_statement(s)
-
-    s = "fn name(x, y) { x; y }"
-    assert fn_statement(s)
+    parses_to("fn name() {}", FnStatement)
+    parses_to("fn name(x) {}", FnStatement)
+    parses_to("fn name(x, y) {}", FnStatement)
+    parses_to("fn name ( x , y , ) { }", FnStatement)
+    parses_to("fn name(x, y) { x; y }", FnStatement)
 
 
 def test_let():
-    s = "let x = 5"
-    assert let_statement(s)
-
-    s = "let x=5"
-    assert let_statement(s)
-
-    # errors
-    s = "let"
-    assert not let_statement(s)
-
-    s = "="
-    assert not let_statement(s)
-
-    s = "le"
-    assert not let_statement(s)
-
-    s = "let x ="
-    assert not let_statement(s)
+    parses_to("let x = 5", LetStatement)
+    parses_to("let x=5", LetStatement)
+    fails_parse("let")
+    fails_parse("=")
+    fails_parse("")
+    fails_parse("let x =")
 
 
 def test_assign():
-    s = "x = 5"
-    assert assign_statement(s)
-
-    s = "x=5"
-    assert assign_statement(s)
-
-    # errors
-    s = "let"
-    assert not assign_statement(s)
-
-    s = "="
-    assert not assign_statement(s)
-
-    s = "le"
-    assert not assign_statement(s)
-
-    s = "let x ="
-    assert not assign_statement(s)
+    parses_to("x=5", AssignStatement)
+    parses_to("x = 5", AssignStatement)
+    fails_parse("let")
+    fails_parse("=")

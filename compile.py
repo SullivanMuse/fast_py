@@ -310,9 +310,9 @@ class Compiler:
             case ParenExpr():
                 return self.compile_expr(expr.inner)
 
-            case FnExpr(span, params, inner):
+            case FnExpr():
                 # Compute free variables
-                free = inner.free()
+                free = expr.inner.free()
 
                 # Collect indices of captured variables
                 captures = {}

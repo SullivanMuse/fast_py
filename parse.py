@@ -10,26 +10,27 @@ pattern = Parser(name="pattern")
 #
 
 keywords = alt(
-    "let",
-    "if",
-    "else",
-    "use",
-    "fn",
-    "await",
-    "chain",
-    "loop",
-    "while",
-    "for",
-    "repeat",
-    "break",
-    "continue",
-    "return",
     "and",
-    "or",
+    "await",
+    "break",
+    "chain",
+    "continue",
+    "else",
+    "fn",
+    "for",
+    "if",
     "in",
-    "notin",
-    "isnot",
     "is",
+    "isnot",
+    "let",
+    "loop",
+    "match",
+    "notin",
+    "or",
+    "repeat",
+    "return",
+    "use",
+    "while",
 )
 name = map(
     seq(neg(keywords), many1(alpha), many0("_", many1(alnum))), lambda span, _: span
@@ -273,13 +274,14 @@ semi_optional = alt(
     match_statement,
 )
 semi_required = alt(
-    expr_statement,
+    assign_statement,
     return_statement,
     continue_statement,
     break_statement,
     let_statement,
-    assign_statement,
+    expr_statement,
 )
+statement = alt(semi_optional, semi_required)
 
 
 @Parser

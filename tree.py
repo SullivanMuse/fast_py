@@ -5,6 +5,18 @@ from comb import Span
 from mixins import FormatNode, GetChildren
 
 
+def free(statements: list["Statement"]):
+    """Iterate over free variables in statements"""
+    bound = set()
+    for statement in statements:
+        bound.update(statement.early_bound())
+    for statement in statements:
+        for var in statement.free():
+            if var not in bound:
+                yield var
+        bound.update(statement.bound())
+
+
 MAX_DEPTH = 10
 
 
@@ -18,30 +30,25 @@ class SyntaxNode(FormatNode):
 
 @dataclass
 class Expr(SyntaxNode, GetChildren):
-    def free(self, set_=None) -> set[str]:
-        if set_ is None:
-            set_ = set()
-
+    def free(self):
         match self:
-            case IdExpr(_, name, inner):
-                set_.add(name.str())
-                if inner is not None:
-                    inner.free(set_)
+            case IdExpr():
+                yield self.span.str()
 
-            case FnExpr(_, _, inner):
-                patterns = []
-                body = None
-                for child in self.children:
-                    if isinstance(child, Pattern):
-                        patterns.append(child)
-                    else:
-                        body = child
-                body.free(set_)
-                for pat in patterns:
-                    pat.remove_bound(set_)
+            case FnExpr():
+                bound = set()
+                for pat in self.params:
+                    bound.update(pat.bound())
+                for var in self.inner.free():
+                    if var not in bound:
+                        yield var
 
-            case LoopExpr(_, statements):
-                free(statements, set_)
+            case LoopExpr():
+                yield from free(self.statements)
+
+            case StringExpr():
+                for child in self.children():
+                    yield from child.free()
 
             case (
                 ArrayExpr(_)
@@ -53,16 +60,27 @@ class Expr(SyntaxNode, GetChildren):
                 | UnaryExpr(_)
                 | ComparisonExpr(_)
             ):
-                for child in self.children:
-                    child.free(set_)
+                for child in self.children():
+                    yield from child.free()
 
             case IntExpr(_) | TagExpr(_) | FloatExpr(_) | StringExpr(_):
                 pass
 
+            case BlockExpr():
+                yield from free(self.statements)
+
+            case MatchExpr():
+                yield from self.subject.free()
+                for pat, expr in self.arms:
+                    bound = pat.bound()
+                    for var in expr.free():
+                        if var not in bound:
+                            yield var
+
             case _:
                 raise NotImplementedError(f"`{type(self)}.free`")
 
-        return set_
+        return free
 
 
 @dataclass
@@ -112,6 +130,8 @@ class StringExpr(Expr):
     rquote: Span
 
     def children(self):
+        if self.fn is not None:
+            yield self.fn
         yield from self.interpolants
 
 
@@ -338,48 +358,61 @@ class LoopExpr(Expr):
         yield from self.statements
 
 
-def free(statements, set_=None) -> set[str]:
-    if set_ is None:
-        set_ = set()
-    scope = set()
-    for statement in statements:
-        match statement:
-            case ExprStatement(_, inner):
-                inner.free(set_)
-
-            case LetStatement(_, pattern, inner):
-                pattern.binds(scope)
-                set_ += inner.free() - scope
-
-            case AssignStatement(_, pattern, inner):
-                set_ += inner.free() - scope
-
-            case LoopStatement(_, statements):
-                free(statements, set_)
-
-            case MatchStatement(_, subject, arms):
-                subject.free(set_)
-                for pattern, expr in arms:
-                    set_ += expr.free() - pattern.bind() - scope
-
-            case BreakStatement(_, _, expr):
-                if expr is not None:
-                    expr.free(set_)
-
-            case ContinueStatement(_, _):
-                pass
-
-            case ReturnStatement(_, inner):
-                inner.free(set_)
-
-            case _:
-                raise NotImplementedError(f"`{type(statement)}.free`")
-    return set_
-
-
 @dataclass
 class Statement(SyntaxNode, GetChildren):
     semi_token: Optional[Span]
+
+    def free(self):
+        """Iterate over free variables in statement"""
+
+        match self:
+            case ExprStatement():
+                yield from self.inner.free()
+
+            case LetStatement():
+                yield from self.inner.free()
+
+            case AssignStatement():
+                yield from self.pattern.free()
+                yield from self.inner.free()
+
+            case LoopStatement():
+                yield from free(self.statements)
+
+            case MatchStatement():
+                yield from self.match_expr.free()
+
+            case BreakStatement():
+                if self.expr is not None:
+                    yield from self.expr.free()
+
+            case ContinueStatement():
+                pass
+
+            case ReturnStatement():
+                yield from self.inner.free()
+
+            case FnStatement():
+                bound = set()
+                bound.add(self.name.str())
+                for pat in self.params:
+                    bound.update(pat.bound())
+                    for var in free(self.body):
+                        if var not in bound:
+                            yield var
+
+            case _:
+                raise NotImplementedError(f"`{type(self)}.free`")
+
+    def early_bound(self):
+        match self:
+            case FnStatement():
+                yield self.name.str()
+
+    def bound(self):
+        match self:
+            case LetStatement():
+                yield from self.pattern.bound()
 
 
 @dataclass
@@ -441,9 +474,8 @@ class AssignStatement(Statement):
     """
 
     pattern: "Pattern"
-    inner: Expr
-
     eq_token: Span
+    inner: Expr
 
     def children(self):
         yield self.pattern
@@ -539,20 +571,26 @@ class ReturnStatement(Statement):
 
 @dataclass
 class Pattern(SyntaxNode, GetChildren):
-    def bind(self, set_=None) -> set[str]:
-        if set_ is None:
-            set_ = set()
+    def free(self):
+        """Iterate over free variables"""
+
+        yield from ()
+
+    def bound(self):
+        """Iterate over bound variables"""
+
         match self:
-            case IdPattern(_, name, inner):
-                set_.add(name.str())
-                inner.bind(set_)
+            case IdPattern():
+                yield self.name.str()
+                if self.inner is not None:
+                    yield from self.inner.bound()
 
-            case ArrayPattern(_, items, _, _, _):
-                for item in items:
-                    item.bind(set_)
+            case ArrayPattern():
+                for item in self.items:
+                    yield from item.bound()
 
-            case GatherPattern(_, _, inner):
-                inner.bind(set_)
+            case GatherPattern():
+                yield from self.inner.bound()
 
             case (
                 IgnorePattern(_)
@@ -565,7 +603,6 @@ class Pattern(SyntaxNode, GetChildren):
 
             case _:
                 raise NotImplementedError(f"`{type(self)}.bind`")
-        return set_
 
 
 @dataclass
