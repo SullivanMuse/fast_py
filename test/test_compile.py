@@ -5,6 +5,7 @@ from instr import (
     ArrayPush,
     Assert,
     Call,
+    ClosureNew,
     Imm,
     Local,
     Push,
@@ -128,6 +129,20 @@ def test_compile_array():
 def test_fn_expr():
     code_test("fn() {()}", [Push(value=Imm(value=Unit()))])
 
-    # code_test(
-    #     "fn(x, y, z) { x(y, z); }",
-    # )
+    code_test(
+        "fn(x, y, z) { x(y, z); }",
+        [
+            ClosureNew(
+                spec=ClosureSpec(
+                    code=[
+                        Push(value=0),
+                        Push(value=1),
+                        Push(value=2),
+                        Call(closure=Local(index=0)),
+                    ],
+                    n_args=3,
+                    capture_indices=[],
+                )
+            )
+        ],
+    )

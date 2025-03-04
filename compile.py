@@ -312,12 +312,14 @@ class Compiler:
 
             case FnExpr():
                 # Compute free variables
-                free = expr.inner.free()
+                free = set(expr.free())
 
                 # Collect indices of captured variables
                 captures = {}
                 for k in free:
-                    captures[k] = self.scope[free]
+                    captures[k] = self.scope[k]
+
+                print(f"{free = }")
 
                 # Create new scope for function and allocate space for captured variables
                 scope = Scope()
@@ -327,40 +329,51 @@ class Compiler:
                     item_ix += 1
 
                 # Allocate space for function arguments
-                args, body = expr.children
-                for arg in args:
-                    scope[arg] = item_ix
-                    item_ix += 1
+                for pat in expr.params:
+                    for var in pat.bound():
+                        scope[var] = item_ix
+                        item_ix += 1
 
                 # Compile the function
                 new_compiler = Compiler(scope)
-                result_ix = new_compiler.compile(body)
-                spec = ClosureSpec(new_compiler.code, len(args), captures.values())
+                result_ix = new_compiler.compile_expr(expr.inner)
+                spec = ClosureSpec(new_compiler.code, len(expr.params), list(captures.values()))
 
                 return self.push(ClosureNew(spec))
 
-            case BlockExpr(span, statements):
-                return self.compile_statements(statements)
+            case BlockExpr():
+                return self.compile_statements(expr.statements)
 
-            case MatchExpr(span, subject, arms):
+            case MatchExpr():
                 raise NotImplementedError
 
-            case LoopExpr(span, statements):
+            case LoopExpr():
                 raise NotImplementedError
 
-            case CallExpr(span):
+            case CallExpr():
+                # Calling convention:
+                #   return value
+                #   arg1
+                #   arg2
+                #   arg3
+                #   local1
+                #   local2
+                #   local3
+                fn_ix = self.compile_expr(expr.fn)
+                for arg in expr.args:
+                    self.compile_expr(arg)
+                return self.push(Call(fn_ix))
+
+            case IndexExpr():
                 raise NotImplementedError
 
-            case IndexExpr(span):
+            case BinaryExpr():
                 raise NotImplementedError
 
-            case BinaryExpr(span):
+            case UnaryExpr():
                 raise NotImplementedError
 
-            case UnaryExpr(span):
-                raise NotImplementedError
-
-            case ComparisonExpr(span):
+            case ComparisonExpr():
                 raise NotImplementedError
 
             case _:
