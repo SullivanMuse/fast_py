@@ -136,7 +136,9 @@ def statement_early_binds(s, vars=None):
     if not vars:
         assert not set(statement(s).val.early_bound()), f"`{s}` early binds nothing"
     else:
-        assert set(statement(s).val.early_bound()) == vars, f"`{s}` early binds {sorted(set(vars))}"
+        assert (
+            set(statement(s).val.early_bound()) == vars
+        ), f"`{s}` early binds {sorted(set(vars))}"
 
 
 def statement_binds(s, vars=None):
@@ -150,7 +152,9 @@ def statement_free(s, vars=None):
     if not vars:
         assert not set(statement(s).val.free()), f"`{s}` has no free variables"
     else:
-        assert set(statement(s).val.free()) == vars, f"`{s}` has free variables {sorted(set(vars))}"
+        assert (
+            set(statement(s).val.free()) == vars
+        ), f"`{s}` has free variables {sorted(set(vars))}"
 
 
 def test_expr_statement_free_bound():

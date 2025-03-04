@@ -126,10 +126,7 @@ def test_compile_array():
 
 
 def test_fn_expr():
-    code_test(
-        "fn() {()}",
-        [Push(value=Imm(value=Unit()))]
-    )
+    code_test("fn() {()}", [Push(value=Imm(value=Unit()))])
 
     # code_test(
     #     "fn(x, y, z) { x(y, z); }",
