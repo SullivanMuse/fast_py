@@ -337,7 +337,9 @@ class Compiler:
                 # Compile the function
                 new_compiler = Compiler(scope)
                 result_ix = new_compiler.compile_expr(expr.inner)
-                spec = ClosureSpec(new_compiler.code, len(expr.params), list(captures.values()))
+                spec = ClosureSpec(
+                    new_compiler.code, len(expr.params), list(captures.values())
+                )
 
                 return self.push(ClosureNew(spec))
 
