@@ -3,13 +3,15 @@ from typing import Optional
 
 from errors import CompileError
 from instr import (
+    Arg,
     ArrayExtend,
     ArrayPush,
     Assert,
     Call,
+    Cap,
     ClosureNew,
-    Jump,
-    Local,
+    LocalJump,
+    Stack,
     MatchArray,
     Pop,
     Push,
@@ -51,41 +53,68 @@ from value import *
 
 
 @dataclass
-class Scope:
-    prev: Optional["Scope"] = None
-    map: dict[str, Local] = field(default_factory=dict)
-    depth: int = 0
+class Frame:
+    _captures: dict[str, int] = field(default_factory=dict)
+    _args: dict[str, int] = field(default_factory=dict)
 
-    def __getitem__(self, key) -> Local:
-        try:
-            return self.map[key]
-        except KeyError:
-            if self.prev is None:
-                raise KeyError
-            return self.prev[key]
+    # For keeping track of locals and temporaries
+    _locals: list[dict[str, Ref]] = field(default_factory=lambda: [{}])
+    _curr_frame_size: list[int] = field(default_factory=lambda: [0])
+    _max_frame_size: int = 0
 
-    def __setitem__(self, key, value):
-        self.map[key] = value
+    def push_scope(self):
+        self._locals.append({})
+        self._curr_frame_size.append(self._curr_frame_size[-1])
 
-    def push(self) -> Local:
-        self.depth += 1
+    def pop_scope(self) -> int:
+        popped = self._locals.pop()
+        return popped
+
+    def __getitem__(self, key) -> Ref:
+        for scope in reversed(self._locals):
+            if key in scope:
+                return scope[key]
+        if key in self._args:
+            return Arg(self._args[key])
+        elif key in self._captures:
+            return Cap(self._captures[key])
+        elif self.parent is not None:
+            return self.parent[key]
+        else:
+            raise KeyError(f"Undefined reference to {key}")
+
+    def loc(self, key, ref):
+        self._locals[-1][key] = ref
+
+    def arg(self, key):
+        index = len(self._args)
+        self._args[key] = index
+
+    def cap(self, key):
+        index = len(self._captures)
+        self._captures[key] = index
+
+    def push(self) -> Stack:
+        """Increase stack depth"""
+        self._curr_frame_size[-1] += 1
+        self._max_frame_size = max(self._curr_frame_size[-1], self._max_frame_size)
         return self.top()
 
     def pop(self):
         """Reduce stack depth"""
-        self.depth -= 1
+        self._curr_frame_size[-1] -= 1
 
-    def top(self) -> Local:
-        if self.depth != 0:
-            return Local(self.depth - 1)
+    def top(self) -> Stack:
+        if self._curr_frame_size[-1] != 0:
+            return Stack(self._curr_frame_size[-1] - 1)
 
 
 @dataclass
 class Compiler:
-    scope: Scope = field(default_factory=Scope)
+    frame: Frame = field(default_factory=Frame)
     code: list[SyntaxNode] = field(default_factory=list)
 
-    def push(self, instr: Instr) -> Optional[Local]:
+    def push_code(self, instr: Instr) -> Optional[Ref]:
         """Push the instruction into the code object
 
         Args:
@@ -99,34 +128,36 @@ class Compiler:
         """
         self.code.append(instr)
 
-        ix = None
+        ref = None
         match instr:
-            case Push(ref):
-                ix = self.scope.push()
+            case Push():
+                ref = self.frame.push()
 
             case ArrayPush(ref):
-                self.scope.pop()
+                self.frame.pop()
 
             case ArrayExtend(array_loc, item_ref):
                 pass
 
             case ClosureNew(spec):
-                ix = self.scope.push()
+                ref = self.frame.push()
 
-            case Call(ref):
-                ix = self.scope.push()
+            case Call():
+                for _ in range(instr.n_args):
+                    self.frame.pop()
+                ref = self.frame.push()
 
-            case Jump(condition, dest):
-                pass
+            case LocalJump():
+                self.frame.pop()
 
             case Pop():
-                self.scope.pop()
+                self.frame.pop()
 
             case StringBufferPush():
                 pass
 
             case StringBufferToString():
-                ix = self.scope.push()
+                ref = self.frame.push()
 
             case Assert():
                 pass
@@ -134,9 +165,9 @@ class Compiler:
             case _:
                 raise NotImplementedError(f"`Compiler.push({type(instr).__name__})`")
 
-        return ix
+        return ref
 
-    def compile_pattern(self, pattern: Pattern, irrefutable=False) -> Local:
+    def compile_pattern(self, pattern: Pattern, irrefutable=False) -> Stack:
         """Attempts to match the value on the top of the stack
 
         Args:
@@ -152,24 +183,24 @@ class Compiler:
         match pattern:
             case IdPattern():
                 # Top of the stack is the last result compiled
-                ix = self.scope.top()
+                ref = self.frame.top()
                 if pattern.inner is not None:
                     self.compile_pattern(pattern.inner)
-                self.scope[pattern.name.str()] = ix
-                return self.push(Push(Bool(True)))
+                self.frame.loc(pattern.name.str(), ref)
+                return self.push_code(Push(Bool(True)))
 
             case ArrayPattern():
                 lower_bound = sum(
                     1 for x in pattern.items if not isinstance(x, GatherPattern)
                 )
-                return self.push(MatchArray(lower_bound))
+                return self.push_code(MatchArray(lower_bound))
 
             case _:
                 raise NotImplementedError(
                     f"`Compiler.compile_pattern({type(pattern).__name__})`"
                 )
 
-    def compile_statement(self, statement: Statement) -> Optional[Local]:
+    def compile_statement(self, statement: Statement) -> Optional[Stack]:
         """Compile the statement
 
         Args:
@@ -190,7 +221,7 @@ class Compiler:
                 self.compile_expr(statement.inner)
                 ix = self.compile_pattern(statement.pattern)
                 instr = Assert(ix, f"Irrefutable pattern: {statement.pattern}")
-                return self.push(instr)
+                return self.push_code(instr)
 
             case FnStatement():
                 pass
@@ -200,7 +231,7 @@ class Compiler:
                     f"`Compiler.compile_statement({type(statement)})`"
                 )
 
-    def compile_statements(self, statements: list[Statement]) -> Optional[Local]:
+    def compile_statements(self, statements: list[Statement]) -> Optional[Stack]:
         """Compile a series of statements
 
         Args:
@@ -209,17 +240,17 @@ class Compiler:
         Returns:
             Optional[Loc]: The location of the value created by the final statement, if any
         """
-        self.scope = Scope(self.scope)
+        self.frame.push_scope()
         result = None
         for statement in statements:
             result = self.compile_statement(statement)
         if result is None:
             instr = Push(Ref.Imm(Unit()))
-            result = self.push(instr)
-        self.scope = self.scope.prev
+            result = self.push_code(instr)
+        self.frame.pop_scope()
         return result
 
-    def compile_expr(self, expr: Expr) -> Local:
+    def compile_expr(self, expr: Expr) -> Stack:
         """Compile the expression
 
         Args:
@@ -236,72 +267,72 @@ class Compiler:
         match expr:
             case IdExpr():
                 name = expr.span.str()
-                item_loc = self.scope[name]
-                instr = Push(item_loc)
-                return self.push(instr)
+                ref = self.frame[name]
+                instr = Push(ref)
+                return self.push_code(instr)
 
             case IntExpr():
                 value = Int(int(expr.span.str()))
                 instr = Push(Ref.Imm(value))
-                return self.push(instr)
+                return self.push_code(instr)
 
             case TagExpr():
                 value = Tag(expr.span.str())
                 instr = Push(Ref.Imm(value))
-                return self.push(instr)
+                return self.push_code(instr)
 
             case FloatExpr():
                 value = Float(float(expr.span.str()))
                 instr = Push(Ref.Imm(value))
-                return self.push(instr)
+                return self.push_code(instr)
 
             case StringExpr():
                 # in the special case that there is only one char and no interpolants, simply create the value in-place
                 value = String(expr.chars[0].str())
                 instr = Push(Ref.Imm(value))
-                ix = self.push(instr)
+                ix = self.push_code(instr)
 
                 # For the rest of the interpolants and the chars following them:
                 if len(expr.interpolants):
                     instr = Push(Ref.Imm(StringBuffer([ix])))
-                    buf_ix = self.push(instr)
+                    buf_ix = self.push_code(instr)
 
                     for interpolant, char in zip(expr.interpolants, expr.chars[1:]):
                         # Compile interpolant
                         interp_ix = self.compile_expr(interpolant)
                         instr = StringBufferPush(buf_ix, interp_ix)
-                        self.push(instr)
+                        self.push_code(instr)
 
                         # Compile char
                         instr = Push(Ref.Imm(String(char.str())))
-                        piece_ix = self.push(instr)
+                        piece_ix = self.push_code(instr)
                         instr = StringBufferPush(buf_ix, piece_ix)
-                        self.push(instr)
+                        self.push_code(instr)
 
                     instr = StringBufferToString(buf_ix)
-                    ix = self.push(instr)
+                    ix = self.push_code(instr)
 
                 # apply fn
                 if expr.fn is not None:
                     self.compile_expr(expr.fn)
-                    instr = Call(self.scope[expr.fn.span.str()])
-                    ix = self.push(instr)
+                    instr = Call(self.frame[expr.fn.span.str()], 1)
+                    ix = self.push_code(instr)
 
                 return ix
 
             case ArrayExpr():
                 instr = Push(Array([None] * len(expr.items)))
-                array_loc = self.push(instr)
+                array_loc = self.push_code(instr)
                 for item in expr.items:
                     match item:
                         case Spread():
-                            item_loc = self.compile_expr(item.inner)
-                            instr = ArrayExtend(array_loc, item_loc)
+                            ref = self.compile_expr(item.inner)
+                            instr = ArrayExtend(array_loc, ref)
 
                         case _:
-                            item_loc = self.compile_expr(item)
-                            instr = ArrayPush(array_loc, item_loc)
-                    self.push(instr)
+                            ref = self.compile_expr(item)
+                            instr = ArrayPush(array_loc, ref)
+                    self.push_code(instr)
                 return array_loc
 
             case Spread():
@@ -317,20 +348,17 @@ class Compiler:
                 # Collect indices of captured variables
                 captures = {}
                 for k in free:
-                    captures[k] = self.scope[k]
+                    captures[k] = self.frame[k]
 
                 # Create new scope for function and allocate space for captured variables
-                scope = Scope()
-                item_ix = 0
+                scope = Frame()
                 for k in free:
-                    scope[k] = item_ix
-                    item_ix += 1
+                    scope.cap(k)
 
                 # Allocate space for function arguments
                 for pat in expr.params:
                     for var in pat.bound():
-                        scope[var] = item_ix
-                        item_ix += 1
+                        scope.arg(var)
 
                 # Compile the function
                 new_compiler = Compiler(scope)
@@ -339,7 +367,7 @@ class Compiler:
                     new_compiler.code, len(expr.params), list(captures.values())
                 )
 
-                return self.push(ClosureNew(spec))
+                return self.push_code(ClosureNew(spec))
 
             case BlockExpr():
                 return self.compile_statements(expr.statements)
@@ -352,17 +380,11 @@ class Compiler:
 
             case CallExpr():
                 # Calling convention:
-                #   return value
-                #   arg1
-                #   arg2
-                #   arg3
-                #   local1
-                #   local2
-                #   local3
+                #   x y z -> return value
                 fn_ix = self.compile_expr(expr.fn)
                 for arg in expr.args:
                     self.compile_expr(arg)
-                return self.push(Call(fn_ix))
+                return self.push_code(Call(fn_ix, len(expr.args)))
 
             case IndexExpr():
                 raise NotImplementedError
@@ -386,7 +408,7 @@ class Compiler:
             Closure: The closure produced from the code object
         """
         closure = Closure(ClosureSpec(self.code, 0, []), [])
-        self.scope = Scope()
+        self.frame = Frame()
         self.code = []
         return closure
 

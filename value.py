@@ -15,6 +15,8 @@ class ClosureSpec(FormatNode):
 
     def children(self):
         yield from self.code
+        yield self.n_args
+        yield self.capture_indices
 
 
 @dataclass

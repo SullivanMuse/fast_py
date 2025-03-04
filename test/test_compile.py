@@ -1,13 +1,14 @@
 from comb import Span
 from compile import compile
 from instr import (
+    Arg,
     ArrayExtend,
     ArrayPush,
     Assert,
     Call,
     ClosureNew,
     Imm,
-    Local,
+    Stack,
     Push,
     StringBufferPush,
     StringBufferToString,
@@ -58,24 +59,24 @@ def test_compile_string():
         '"asdf{123}asdf"',
         [
             Push(value=Imm(value=String(value="asdf"))),
-            Push(value=Imm(value=StringBuffer(pieces=[Local(index=0)]))),
+            Push(value=Imm(value=StringBuffer(pieces=[Stack(index=0)]))),
             Push(value=Imm(value=Int(value=123))),
-            StringBufferPush(buffer_loc=Local(index=1), piece=Local(index=2)),
+            StringBufferPush(buffer_loc=Stack(index=1), piece=Stack(index=2)),
             Push(value=Imm(value=String(value="asdf"))),
-            StringBufferPush(buffer_loc=Local(index=1), piece=Local(index=3)),
-            StringBufferToString(buffer_loc=Local(index=1)),
+            StringBufferPush(buffer_loc=Stack(index=1), piece=Stack(index=3)),
+            StringBufferToString(buffer_loc=Stack(index=1)),
         ],
     )
     code_test(
         '"asdf{"asdf"}asdf"',
         [
             Push(value=Imm(value=String(value="asdf"))),
-            Push(value=Imm(value=StringBuffer(pieces=[Local(index=0)]))),
+            Push(value=Imm(value=StringBuffer(pieces=[Stack(index=0)]))),
             Push(value=Imm(value=String(value="asdf"))),
-            StringBufferPush(buffer_loc=Local(index=1), piece=Local(index=2)),
+            StringBufferPush(buffer_loc=Stack(index=1), piece=Stack(index=2)),
             Push(value=Imm(value=String(value="asdf"))),
-            StringBufferPush(buffer_loc=Local(index=1), piece=Local(index=3)),
-            StringBufferToString(buffer_loc=Local(index=1)),
+            StringBufferPush(buffer_loc=Stack(index=1), piece=Stack(index=3)),
+            StringBufferToString(buffer_loc=Stack(index=1)),
         ],
     )
     code_test(
@@ -84,11 +85,11 @@ def test_compile_string():
             Push(value=Imm(value=Int(value=12))),
             Push(value=Bool(value=True)),
             Assert(
-                value=Local(index=1), reason="Irrefutable pattern: IdPattern 4:5 'x'"
+                value=Stack(index=1), reason="Irrefutable pattern: IdPattern 4:5 'x'"
             ),
             Push(value=Imm(value=String(value="Hello"))),
-            Push(value=Local(index=0)),
-            Call(closure=Local(index=0)),
+            Push(value=Stack(index=0)),
+            Call(closure=Stack(index=0), n_args=1),
         ],
         is_expr=False,
     )
@@ -100,11 +101,11 @@ def test_compile_array():
         [
             Push(value=Array(values=[None, None, None])),
             Push(value=Imm(value=Int(value=1))),
-            ArrayPush(array=Local(index=0), value=Local(index=1)),
+            ArrayPush(array=Stack(index=0), value=Stack(index=1)),
             Push(value=Imm(value=Int(value=2))),
-            ArrayPush(array=Local(index=0), value=Local(index=1)),
+            ArrayPush(array=Stack(index=0), value=Stack(index=1)),
             Push(value=Imm(value=Int(value=3))),
-            ArrayPush(array=Local(index=0), value=Local(index=1)),
+            ArrayPush(array=Stack(index=0), value=Stack(index=1)),
         ],
     )
 
@@ -113,15 +114,15 @@ def test_compile_array():
         [
             Push(value=Array(values=[None, None, None])),
             Push(value=Imm(value=Int(value=1))),
-            ArrayPush(array=Local(index=0), value=Local(index=1)),
+            ArrayPush(array=Stack(index=0), value=Stack(index=1)),
             Push(value=Imm(value=Int(value=2))),
-            ArrayPush(array=Local(index=0), value=Local(index=1)),
+            ArrayPush(array=Stack(index=0), value=Stack(index=1)),
             Push(value=Array(values=[None, None])),
             Push(value=Imm(value=Int(value=3))),
-            ArrayPush(array=Local(index=1), value=Local(index=2)),
+            ArrayPush(array=Stack(index=1), value=Stack(index=2)),
             Push(value=Imm(value=Int(value=4))),
-            ArrayPush(array=Local(index=1), value=Local(index=2)),
-            ArrayExtend(array_loc=Local(index=0), item_ref=Local(index=1)),
+            ArrayPush(array=Stack(index=1), value=Stack(index=2)),
+            ArrayExtend(array_loc=Stack(index=0), item_ref=Stack(index=1)),
         ],
     )
 
@@ -131,18 +132,5 @@ def test_fn_expr():
 
     code_test(
         "fn(x, y, z) { x(y, z); }",
-        [
-            ClosureNew(
-                spec=ClosureSpec(
-                    code=[
-                        Push(value=0),
-                        Push(value=1),
-                        Push(value=2),
-                        Call(closure=Local(index=0)),
-                    ],
-                    n_args=3,
-                    capture_indices=[],
-                )
-            )
-        ],
+        [ClosureNew(spec=ClosureSpec(code=[Push(value=Arg(index=0)), Push(value=Arg(index=1)), Push(value=Arg(index=2)), Call(closure=Stack(index=0), n_args=2)],n_args=3, capture_indices=[]))],
     )

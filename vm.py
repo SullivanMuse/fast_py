@@ -1,72 +1,115 @@
 from dataclasses import dataclass, field
+from typing import Any, Optional
 
 from instr import (
+    Arg,
     ArrayExtend,
     ArrayPush,
     Call,
+    Cap,
     ClosureNew,
     Imm,
     Instr,
-    Jump,
-    Local,
+    LocalJump,
+    Ref,
+    Stack,
     Pop,
     Push,
     Return,
 )
+from mixins import FormatNode
 from value import Bool, Closure, Value
+from compile import compile
 
 
 @dataclass
-class Vm:
-    stack: list[list[Value]] = field(default_factory=lambda: [[]])
+class StackFrame(FormatNode):
+    closure: Closure
+    args: list[Any]
+    locals: list[Any] = field(default_factory=list)
+
+    def children(self):
+        yield self.closure
+        yield self.args
+        yield from self.locals
+
+
+@dataclass
+class Vm(FormatNode):
+    stack: list[StackFrame] = field(default_factory=lambda: [])
+
+    def children(self):
+        yield from self.stack
 
     @property
     def frame(self):
         return self.stack[-1]
 
-    def push_frame(self, take_args):
-        self.stack.append(self.frame[-take_args:])
+    def push_frame(self, closure):
+        if len(self.stack) == 0:
+            assert closure.spec.n_args == 0, "First closure run must not have arguments"
+            args = []
+        else:
+            n_args = closure.spec.n_args
+            self.frame.locals, args = (
+                self.frame.locals[:-n_args],
+                self.frame.locals[-n_args:],
+            )
+        self.stack.append(StackFrame(closure, args))
 
-    def pop_frame(self) -> list[Value]:
+    def pop_frame(self) -> StackFrame:
         return self.stack.pop()
 
     def resolve(self, arg) -> Value:
+        if not isinstance(arg, Ref):
+            raise TypeError
         match arg:
+            case Arg(index):
+                self.frame.args[index]
+
+            case Cap(index):
+                self.frame.closure.captures[index]
+
             case Imm(value):
                 return value
 
-            case Local(ix):
-                return self.frame[ix]
+            case Stack(index):
+                return self.frame.locals[index]
 
             case _:
-                raise TypeError
+                raise NotImplementedError(f"`Vm.resolve({type(arg).__name__})`")
 
     def push(self, value):
-        self.frame.append(value)
+        self.frame.locals.append(value)
+
+    def ret(self, value_ref):
+        return_value = self.resolve(value_ref)
+        # print(f"About to return {return_value = }")
+        self.pop_frame()
+        return return_value
 
     def run(self, closure: list[Instr] | Closure) -> Value:
-        if not isinstance(closure, Closure):
-            closure = Closure.from_code(closure)
+        self.closure = closure
 
-        self.push_frame(closure.spec.n_args)
-        self.frame.extend(closure.captures)
+        # Push the new frame
+        self.push_frame(closure)
+        # print(f"{self = }")
         code = closure.spec.code
 
-        instr_ix = 0
-        while True:
-            if instr_ix not in range(len(code)):
-                raise ValueError(
-                    f"instruction pointer ({instr_ix}) out of range ({len(code) = }); bad code"
-                )
-
-            match instr := code[instr_ix]:
+        ip = 0
+        print(f"{ip = }")
+        while ip in range(len(code)):
+            instr = code[ip]
+            print(f"{instr = }")
+            match instr:
                 case Push(value_ref):
                     value = self.resolve(value_ref)
                     self.push(value)
 
                 case Call(closure_ref):
                     closure = self.resolve(closure_ref)
-                    self.push(self.run(closure))
+                    value = self.run(closure)
+                    self.push(value)
 
                 case ClosureNew(spec):
                     captures = [self.frame[i] for i in spec.capture_indices]
@@ -83,27 +126,30 @@ class Vm:
                     source = self.resolve(source_ref)
                     dest.values.extend(source.values)
 
-                case Jump(condition_ref, dest_index):
+                case LocalJump(condition_ref, dest):
                     condition = self.resolve(condition_ref)
                     if condition == Bool(True):
-                        instr_ix = dest_index
+                        ip = dest
                         continue
 
                 case Return(return_value_ref):
-                    return_value = self.resolve(return_value_ref)
-                    self.pop_frame()
-                    return return_value
+                    return self.ret(return_value_ref)
 
                 case Pop():
-                    self.frame.pop()
+                    self.frame.locals.pop()
 
                 case _:
                     raise NotImplementedError(
                         f"`Vm.run` missing case for instruction: {instr}"
                     )
 
-            instr_ix += 1
+            ip += 1
+        return self.ret(Stack(-1))
 
 
-def run(closure):
-    return Vm().run(closure)
+def run(code):
+    if isinstance(code, str):
+        code = compile(code)
+    code.p()
+    vm = Vm()
+    return vm.run(code)

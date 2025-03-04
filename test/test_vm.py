@@ -1,4 +1,4 @@
-from instr import ArrayPush, Imm, Local, Push, Return
+from instr import ArrayPush, Imm, Stack, Push, Return
 from value import Array, Closure, Unit
 from vm import Vm
 

@@ -21,13 +21,33 @@ class Imm(Ref, FormatNode):
 
 
 @dataclass
-class Local(Ref, FormatNode):
-    """Local variable"""
+class Stack(Ref, FormatNode):
+    """Stack slot"""
 
     index: int
 
     def short(self):
         return f"loc {self.index}"
+
+
+@dataclass
+class Arg(Ref, FormatNode):
+    """Function argument"""
+
+    index: int
+
+    def short(self):
+        return f"arg {self.index}"
+
+
+@dataclass
+class Cap(Ref, FormatNode):
+    """Closure capture"""
+
+    index: int
+
+    def short(self):
+        return f"cap {self.index}"
 
 
 Ref.get_children()
@@ -56,19 +76,19 @@ class ArrayPush(Instr):
 
 @dataclass
 class ArrayExtend(Instr):
-    array_loc: Local
+    array_loc: Stack
     item_ref: Ref
 
 
 @dataclass
 class StringBufferPush(Instr):
-    buffer_loc: Local
-    piece: Local
+    buffer_loc: Stack
+    piece: Stack
 
 
 @dataclass
 class StringBufferToString(Instr):
-    buffer_loc: Local
+    buffer_loc: Stack
 
 
 @dataclass
@@ -79,10 +99,11 @@ class ClosureNew(Instr):
 @dataclass
 class Call(Instr):
     closure: Ref
+    n_args: int
 
 
 @dataclass
-class Jump(Instr):
+class LocalJump(Instr):
     condition: Ref
     dest: int
 
@@ -94,7 +115,8 @@ class Return(Instr):
 
 @dataclass
 class Pop(Instr):
-    pass
+    # number of values to pop
+    n: int
 
 
 @dataclass
