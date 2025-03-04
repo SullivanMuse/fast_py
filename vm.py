@@ -65,10 +65,10 @@ class Vm(FormatNode):
             raise TypeError
         match arg:
             case Arg(index):
-                self.frame.args[index]
+                return self.frame.args[index]
 
             case Cap(index):
-                self.frame.closure.captures[index]
+                return self.frame.closure.captures[index]
 
             case Imm(value):
                 return value
@@ -84,7 +84,6 @@ class Vm(FormatNode):
 
     def ret(self, value_ref):
         return_value = self.resolve(value_ref)
-        # print(f"About to return {return_value = }")
         self.pop_frame()
         return return_value
 
@@ -93,21 +92,18 @@ class Vm(FormatNode):
 
         # Push the new frame
         self.push_frame(closure)
-        # print(f"{self = }")
         code = closure.spec.code
 
         ip = 0
-        print(f"{ip = }")
         while ip in range(len(code)):
             instr = code[ip]
-            print(f"{instr = }")
             match instr:
                 case Push(value_ref):
                     value = self.resolve(value_ref)
                     self.push(value)
 
-                case Call(closure_ref):
-                    closure = self.resolve(closure_ref)
+                case Call():
+                    closure = self.resolve(instr.closure)
                     value = self.run(closure)
                     self.push(value)
 
@@ -150,6 +146,5 @@ class Vm(FormatNode):
 def run(code):
     if isinstance(code, str):
         code = compile(code)
-    code.p()
     vm = Vm()
     return vm.run(code)

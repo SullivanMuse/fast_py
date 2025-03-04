@@ -78,10 +78,7 @@ class Frame:
             return Arg(self._args[key])
         elif key in self._captures:
             return Cap(self._captures[key])
-        elif self.parent is not None:
-            return self.parent[key]
-        else:
-            raise KeyError(f"Undefined reference to {key}")
+        raise KeyError(f"Undefined reference to {key}")
 
     def loc(self, key, ref):
         self._locals[-1][key] = ref
