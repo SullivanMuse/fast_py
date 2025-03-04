@@ -319,8 +319,6 @@ class Compiler:
                 for k in free:
                     captures[k] = self.scope[k]
 
-                print(f"{free = }")
-
                 # Create new scope for function and allocate space for captured variables
                 scope = Scope()
                 item_ix = 0

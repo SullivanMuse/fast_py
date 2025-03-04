@@ -4,7 +4,6 @@ from tree import *
 
 def parses_to(s, cls):
     result = statement(s)
-    print(f"{result = }")
     assert result, f"`{s}` parses"
     assert type(result.val) is cls, f"`{s}` has type `{cls.__name__}`"
 
