@@ -176,7 +176,7 @@ class Compiler:
         Returns:
             Optional[int]: The stack location of the boolean value indicating whether the pattern matched or not, unless the pattern does not branch
         """
-        print(f"`Compiler.compile_pattern({type(pattern)})`")
+        # print(f"`Compiler.compile_pattern({type(pattern)})`")
         match pattern:
             case IdPattern():
                 # Top of the stack is the last result compiled
@@ -209,7 +209,7 @@ class Compiler:
         Returns:
             Optional[Loc]: The location of the value produced by the statement
         """
-        print(f"`Compiler.compile_statement({type(statement)})`")
+        # print(f"`Compiler.compile_statement({type(statement)})`")
         match statement:
             case ExprStatement():
                 return self.compile_expr(statement.inner)
@@ -260,7 +260,7 @@ class Compiler:
         Returns:
             Loc: The location of the value produced by the expression
         """
-        print(f"`Compiler.compile_expr({type(expr)})`")
+        # print(f"`Compiler.compile_expr({type(expr)})`")
         match expr:
             case IdExpr():
                 name = expr.span.str()

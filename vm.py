@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+from errors import VmError
 from instr import (
     Arg,
     ArrayExtend,
@@ -138,7 +139,7 @@ class Vm(FormatNode):
                 case Assert():
                     value = self.resolve(instr.value)
                     if value != Bool(True):
-                        print(f"assertion error: {instr.reason}")
+                        raise VmError(f"assertion error: {instr.reason}")
 
                 case _:
                     raise NotImplementedError(

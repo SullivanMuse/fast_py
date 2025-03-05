@@ -20,10 +20,9 @@ def test_run_tag():
 
 def test_run_string():
     value('"asdf"', String(value="asdf"))
-    # TODO: identity
-    # value('let f = fn(x) x; f"hello"', String(value="hello"))
     value('let f = fn(x) x; f("hello")', String(value="hello"))
     value('let f = fn(x) x; f"hello"', String(value="hello"))
+    assert run('let f = fn(x) x; f"hello"') == run('let f = fn(x) x; f("hello")')
 
 
 def test_run_let_statement():
