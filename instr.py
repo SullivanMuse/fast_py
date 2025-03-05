@@ -1,14 +1,14 @@
 from dataclasses import dataclass, asdict, fields
 
-from mixins import FormatNode, GetChildren
+from mixins import Format, GetChildren
 
 
-class Ref(FormatNode, GetChildren):
+class Ref(Format, GetChildren):
     """Stack value offset"""
 
 
 @dataclass
-class Imm(Ref, FormatNode):
+class Imm(Ref, Format):
     """Literal value"""
 
     value: "Value"
@@ -16,12 +16,9 @@ class Imm(Ref, FormatNode):
     def short(self):
         return f"imm"
 
-    def children(self):
-        yield self.value
-
 
 @dataclass
-class Stack(Ref, FormatNode):
+class Stack(Ref, Format):
     """Stack slot"""
 
     index: int
@@ -31,7 +28,7 @@ class Stack(Ref, FormatNode):
 
 
 @dataclass
-class Arg(Ref, FormatNode):
+class Arg(Ref, Format):
     """Function argument"""
 
     index: int
@@ -41,7 +38,7 @@ class Arg(Ref, FormatNode):
 
 
 @dataclass
-class Cap(Ref, FormatNode):
+class Cap(Ref, Format):
     """Closure capture"""
 
     index: int
@@ -54,13 +51,9 @@ Ref.get_children()
 
 
 @dataclass
-class Instr(FormatNode, GetChildren):
+class Instr(Format, GetChildren):
     def short(self):
         return f"Instr.{type(self).__name__}"
-
-    def children(self):
-        for field in fields(type(self)):
-            yield getattr(self, field.name)
 
 
 @dataclass

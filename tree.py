@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from comb import Span
-from mixins import FormatNode, GetChildren
+from mixins import Format, GetChildren
 
 
 def free(statements: list["Statement"]):
@@ -21,7 +21,7 @@ MAX_DEPTH = 10
 
 
 @dataclass
-class SyntaxNode(FormatNode):
+class SyntaxNode(Format):
     span: Span
 
     def short(self):
@@ -47,7 +47,7 @@ class Expr(SyntaxNode, GetChildren):
                 yield from free(self.statements)
 
             case StringExpr():
-                for child in self.children():
+                for child in self.positional():
                     yield from child.free()
 
             case (
@@ -60,7 +60,7 @@ class Expr(SyntaxNode, GetChildren):
                 | UnaryExpr(_)
                 | ComparisonExpr(_)
             ):
-                for child in self.children():
+                for child in self.positional():
                     yield from child.free()
 
             case IntExpr(_) | TagExpr(_) | FloatExpr(_) | StringExpr(_):
@@ -129,7 +129,7 @@ class StringExpr(Expr):
     lquote: Span
     rquote: Span
 
-    def children(self):
+    def positional(self):
         if self.fn is not None:
             yield self.fn
         yield from self.interpolants
@@ -147,7 +147,7 @@ class ArrayExpr(Expr):
     items: list[Expr]
     rbracket: Span
 
-    def children(self):
+    def positional(self):
         yield from self.items
 
 
@@ -164,7 +164,7 @@ class Spread(Expr):
     ellipsis: Span
     inner: Expr
 
-    def children(self):
+    def positional(self):
         yield self.inner
 
 
@@ -180,7 +180,7 @@ class ParenExpr(Expr):
     inner: Expr
     rpar: Span
 
-    def children(self):
+    def positional(self):
         yield self.inner
 
 
@@ -197,7 +197,7 @@ class CallExpr(Expr):
     args: list[Expr]
     rpar_token: Span
 
-    def children(self):
+    def positional(self):
         yield self.fn
         yield from self.args
 
@@ -215,7 +215,7 @@ class IndexExpr(Expr):
     indices: list[Expr]
     rsq_token: Span
 
-    def children(self):
+    def positional(self):
         yield self.subject
         yield from self.indices
 
@@ -232,7 +232,7 @@ class BinaryExpr(Expr):
     left: Expr
     right: Expr
 
-    def children(self):
+    def positional(self):
         yield self.left
         yield self.right
 
@@ -248,7 +248,7 @@ class UnaryExpr(Expr):
     op: Span
     inner: Expr
 
-    def children(self):
+    def positional(self):
         yield self.inner
 
 
@@ -263,7 +263,7 @@ class ComparisonExpr(Expr):
     ops: list[Span]  # len(self.ops) == len(self.inner) - 1
     inner: list[Expr]
 
-    def children(self):
+    def positional(self):
         yield from self.inner
 
 
@@ -290,7 +290,7 @@ class FnExpr(Expr):
     rpar: Span
     inner: Expr
 
-    def children(self):
+    def positional(self):
         yield from self.params
         yield self.inner
 
@@ -307,7 +307,7 @@ class BlockExpr(Expr):
     statements: list["Statement"]
     rbrace: Span
 
-    def children(self):
+    def positional(self):
         yield from self.statements
 
 
@@ -317,7 +317,7 @@ class Arm(SyntaxNode):
     arrow_token: Span
     expr: Expr
 
-    def children(self):
+    def positional(self):
         yield self.pattern
         yield self.expr
 
@@ -336,7 +336,7 @@ class MatchExpr(Expr):
     arms: list[Arm]
     rbrace_token: Span
 
-    def children(self):
+    def positional(self):
         yield self.subject
         yield from self.arms
 
@@ -354,7 +354,7 @@ class LoopExpr(Expr):
     statements: list["Statement"]
     rbrace_token: Span
 
-    def children(self):
+    def positional(self):
         yield from self.statements
 
 
@@ -425,7 +425,7 @@ class ExprStatement(Statement):
 
     inner: Expr
 
-    def children(self):
+    def positional(self):
         yield self.inner
 
 
@@ -442,7 +442,7 @@ class FnStatement(Statement):
     body: list[Statement]
     rbrace_token: Span
 
-    def children(self):
+    def positional(self):
         yield from self.params
         yield from self.body
 
@@ -460,7 +460,7 @@ class LetStatement(Statement):
     eq_token: Span
     inner: Expr
 
-    def children(self):
+    def positional(self):
         yield self.pattern
         yield self.inner
 
@@ -477,7 +477,7 @@ class AssignStatement(Statement):
     eq_token: Span
     inner: Expr
 
-    def children(self):
+    def positional(self):
         yield self.pattern
         yield self.inner
 
@@ -492,7 +492,7 @@ class LoopStatement(Statement):
 
     loop_expr: LoopExpr
 
-    def children(self):
+    def positional(self):
         yield self.loop_expr
 
 
@@ -506,7 +506,7 @@ class MatchStatement(Statement):
 
     match_expr: MatchExpr
 
-    def children(self):
+    def positional(self):
         yield self.match_expr
 
 
@@ -522,7 +522,7 @@ class BreakStatement(Statement):
     label: Optional[Span]
     inner: Optional[Expr]
 
-    def children(self):
+    def positional(self):
         if self.inner is not None:
             yield self.inner
 
@@ -549,7 +549,7 @@ class BlockStatement(Statement):
 
     statements: list["Statement"]
 
-    def children(self):
+    def positional(self):
         yield from self.statements
 
 
@@ -564,7 +564,7 @@ class ReturnStatement(Statement):
     return_token: Span
     inner: Optional[Expr]
 
-    def children(self):
+    def positional(self):
         if self.inner is not None:
             yield self.inner
 
@@ -628,7 +628,7 @@ class IdPattern(Pattern):
     at_token: Optional[Span] = None
     inner: Optional[Pattern] = None
 
-    def children(self):
+    def positional(self):
         if self.inner is not None:
             yield self.inner
 
@@ -692,7 +692,7 @@ class ArrayPattern(Pattern):
     commas: list[Span]
     rsq: Span
 
-    def children(self):
+    def positional(self):
         yield from self.items
 
 
@@ -709,7 +709,7 @@ class GatherPattern(Pattern):
     ellipsis: Span
     inner: Pattern
 
-    def children(self):
+    def positional(self):
         yield self.inner
 
 

@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
-from mixins import FormatNode
+from mixins import Format
 
 
 @dataclass(frozen=True)
-class Span(FormatNode):
+class Span(Format):
     string: str
     start: int = 0
     stop: int = None
@@ -45,7 +45,7 @@ class Span(FormatNode):
 
 
 @dataclass
-class Result(FormatNode):
+class Result(Format):
     span: Span
 
     def __bool__(self):
@@ -62,7 +62,7 @@ class Success(Result):
     def set_val(self, val):
         return Success(self.span, val)
 
-    def children(self):
+    def positional(self):
         yield self.val
 
 
@@ -70,7 +70,7 @@ class Success(Result):
 class Error(Result):
     reason: Optional[str] = None
 
-    def children(self):
+    def positional(self):
         yield self.reason
 
 

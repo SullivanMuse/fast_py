@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field
 
 from instr import Instr
-from mixins import FormatNode
+from mixins import Format
 
 
 @dataclass
-class ClosureSpec(FormatNode):
+class ClosureSpec(Format):
     code: list[Instr]
     n_args: int
     capture_indices: list[int]
@@ -13,14 +13,12 @@ class ClosureSpec(FormatNode):
     def short(self):
         return f"{type(self).__qualname__}"
 
-    def children(self):
+    def positional(self):
         yield from self.code
-        yield self.n_args
-        yield self.capture_indices
 
 
 @dataclass
-class Value(FormatNode):
+class Value(Format):
     def short(self):
         return f"Value.{type(self).__name__}"
 
@@ -34,7 +32,7 @@ class Unit(Value):
 class Bool(Value):
     value: bool
 
-    def children(self):
+    def positional(self):
         yield self.value
 
 
@@ -42,7 +40,7 @@ class Bool(Value):
 class Int(Value):
     value: int
 
-    def children(self):
+    def positional(self):
         yield self.value
 
 
@@ -55,7 +53,7 @@ class Tag(Value):
 class String(Value):
     value: str
 
-    def children(self):
+    def positional(self):
         yield self.value
 
 
@@ -73,7 +71,7 @@ class Float(Value):
 class Array(Value):
     values: list[Value] = field(default_factory=list)
 
-    def children(self):
+    def positional(self):
         yield from self.values
 
 
@@ -81,7 +79,7 @@ class Array(Value):
 class Object(Value):
     values: dict[str, Value]
 
-    def children(self):
+    def positional(self):
         yield from self.values.values()
 
 
@@ -93,7 +91,3 @@ class Closure(Value):
     @classmethod
     def from_code(cls, code):
         return cls(ClosureSpec(code, 0, []), [])
-
-    def children(self):
-        yield self.spec
-        yield from self.captures

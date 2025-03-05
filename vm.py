@@ -19,28 +19,28 @@ from instr import (
     Push,
     Return,
 )
-from mixins import FormatNode
+from mixins import Format
 from value import Bool, Closure, Value
 from compile import compile
 
 
 @dataclass
-class StackFrame(FormatNode):
+class StackFrame(Format):
     closure: Closure
     args: list[Any]
     locals: list[Any] = field(default_factory=list)
 
-    def children(self):
+    def positional(self):
         yield self.closure
         yield self.args
         yield from self.locals
 
 
 @dataclass
-class Vm(FormatNode):
+class Vm(Format):
     stack: list[StackFrame] = field(default_factory=lambda: [])
 
-    def children(self):
+    def positional(self):
         yield from self.stack
 
     @property
