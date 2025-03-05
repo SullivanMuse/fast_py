@@ -184,7 +184,7 @@ class Compiler:
                 if pattern.inner is not None:
                     self.compile_pattern(pattern.inner)
                 self.frame.loc(pattern.name.str(), ref)
-                return self.push_code(Push(Bool(True)))
+                return self.push_code(Push(Ref.Imm(Bool(True))))
 
             case ArrayPattern():
                 lower_bound = sum(
@@ -284,6 +284,11 @@ class Compiler:
                 return self.push_code(instr)
 
             case StringExpr():
+
+                # leading f
+                if expr.fn is not None:
+                    fn_ix = self.compile_expr(expr.fn)
+
                 # in the special case that there is only one char and no interpolants, simply create the value in-place
                 value = String(expr.chars[0].str())
                 instr = Push(Ref.Imm(value))
@@ -311,9 +316,9 @@ class Compiler:
 
                 # apply fn
                 if expr.fn is not None:
-                    self.compile_expr(expr.fn)
-                    instr = Call(self.frame[expr.fn.span.str()], 1)
-                    ix = self.push_code(instr)
+                    # Calling convention:
+                    #   x y z -> return value
+                    return self.push_code(Call(fn_ix, 1))
 
                 return ix
 

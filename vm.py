@@ -5,6 +5,7 @@ from instr import (
     Arg,
     ArrayExtend,
     ArrayPush,
+    Assert,
     Call,
     Cap,
     ClosureNew,
@@ -133,6 +134,11 @@ class Vm(FormatNode):
 
                 case Pop():
                     self.frame.locals.pop()
+
+                case Assert():
+                    value = self.resolve(instr.value)
+                    if value != Bool(True):
+                        print(f"assertion error: {instr.reason}")
 
                 case _:
                     raise NotImplementedError(

@@ -80,19 +80,27 @@ def test_compile_string():
         ],
     )
     code_test(
-        'let x = 12; x"Hello"',
+        'let f = fn(x) x; f"hello"',
         [
-            Push(value=Imm(value=Int(value=12))),
-            Push(value=Bool(value=True)),
-            Assert(
-                value=Stack(index=1), reason="Irrefutable pattern: IdPattern 4:5 'x'"
+            ClosureNew(
+                spec=ClosureSpec(
+                    code=[Push(value=Arg(index=0))], n_args=1, capture_indices=[]
+                )
             ),
-            Push(value=Imm(value=String(value="Hello"))),
+            Push(value=Imm(value=Bool(value=True))),
+            Assert(
+                value=Stack(index=1), reason="Irrefutable pattern: IdPattern 4:5 'f'"
+            ),
             Push(value=Stack(index=0)),
-            Call(closure=Stack(index=0), n_args=1),
+            Push(value=Imm(value=String(value="hello"))),
+            Call(closure=Stack(index=2), n_args=1),
         ],
         is_expr=False,
     )
+
+    assert compile('let f = fn(x) x; f"hello"') == compile(
+        'let f = fn(x) x; f("hello")'
+    ), "prefix function is the same"
 
 
 def test_compile_array():
@@ -132,5 +140,18 @@ def test_fn_expr():
 
     code_test(
         "fn(x, y, z) { x(y, z); }",
-        [ClosureNew(spec=ClosureSpec(code=[Push(value=Arg(index=0)), Push(value=Arg(index=1)), Push(value=Arg(index=2)), Call(closure=Stack(index=0), n_args=2)],n_args=3, capture_indices=[]))],
+        [
+            ClosureNew(
+                spec=ClosureSpec(
+                    code=[
+                        Push(value=Arg(index=0)),
+                        Push(value=Arg(index=1)),
+                        Push(value=Arg(index=2)),
+                        Call(closure=Stack(index=0), n_args=2),
+                    ],
+                    n_args=3,
+                    capture_indices=[],
+                )
+            )
+        ],
     )

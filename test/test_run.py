@@ -18,6 +18,18 @@ def test_run_tag():
     value(":asdf", Tag(value=":asdf"))
 
 
+def test_run_string():
+    value('"asdf"', String(value="asdf"))
+    # TODO: identity
+    # value('let f = fn(x) x; f"hello"', String(value="hello"))
+    value('let f = fn(x) x; f("hello")', String(value="hello"))
+    value('let f = fn(x) x; f"hello"', String(value="hello"))
+
+
+def test_run_let_statement():
+    value("let f = fn(x) x; f(123)", Int(value=123))
+
+
 def test_run_fn():
     value("(fn() 123)()", Int(value=123))
     value("(fn(x) x)(123)", Int(value=123))
