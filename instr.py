@@ -1,137 +1,228 @@
-from dataclasses import dataclass, asdict, fields
-
-from mixins import Format, GetChildren
-
-
-class Ref(Format, GetChildren):
-    """Stack value offset"""
+from dataclasses import dataclass
+from typing import Callable
+from mixins import GetChildren
+from value import ClosureSpec, Value
 
 
 @dataclass
-class Imm(Ref, Format):
-    """Literal value"""
-
-    value: "Value"
-
-    def short(self):
-        return f"imm"
+class Instr(GetChildren):
+    def effect(self):
+        """Effect on stack depth"""
+        raise NotImplementedError
 
 
 @dataclass
-class Stack(Ref, Format):
-    """Stack slot"""
-
+class GetLocal:
+    """get local variable"""
     index: int
 
-    def short(self):
-        return f"loc {self.index}"
+    def __str__(self):
+        return f"  gloc {self.index}"
+
+    def effect(self):
+        return 1
 
 
 @dataclass
-class Arg(Ref, Format):
-    """Function argument"""
-
+class SetLocal:
+    """set local variable"""
     index: int
 
-    def short(self):
-        return f"arg {self.index}"
+    def __str__(self):
+        return f"  sloc {self.index}"
 
-
-@dataclass
-class Cap(Ref, Format):
-    """Closure capture"""
-
-    index: int
-
-    def short(self):
-        return f"cap {self.index}"
-
-
-Ref.get_children()
-
-
-@dataclass
-class Instr(Format, GetChildren):
-    def short(self):
-        return f"Instr.{type(self).__name__}"
+    def effect(self):
+        return -1
 
 
 @dataclass
 class Push(Instr):
-    value: Ref
+    value: Value
+
+    def __str__(self):
+        return f"  push {self.value}"
+
+    def effect(self):
+        return 1
 
 
 @dataclass
-class ArrayPush(Instr):
-    array: Ref
-    value: Ref
+class Dupe(Instr):
+    def __str__(self):
+        return "  dup"
 
-
-@dataclass
-class ArrayExtend(Instr):
-    array_loc: Stack
-    item_ref: Ref
-
-
-@dataclass
-class StringBufferPush(Instr):
-    buffer_loc: Stack
-    piece: Stack
-
-
-@dataclass
-class StringBufferToString(Instr):
-    buffer_loc: Stack
-
-
-@dataclass
-class ClosureNew(Instr):
-    spec: "ClosureSpec"
-
-
-@dataclass
-class Call(Instr):
-    closure: Ref
-    n_args: int
-
-
-@dataclass
-class LocalJump(Instr):
-    condition: Ref
-    dest: int
-
-
-@dataclass
-class Return(Instr):
-    """Return from stack frame; return value is implicitly the top-most temporary on the previous stack frame"""
+    def effect(self):
+        return 1
 
 
 @dataclass
 class Pop(Instr):
-    # number of values to pop
-    n: int
+    def __str__(self):
+        return "  pop"
+
+    def effect(self):
+        return -1
 
 
 @dataclass
-class Assert(Instr):
-    value: Ref
+class Jump(Instr):
+    label: "Label"
+
+    def __str__(self):
+        return f"  jump '{self.label}"
+
+    def effect(self):
+        return 0
+
+
+@dataclass
+class JTrue(Instr):
+    label: str
+
+    def __str__(self):
+        return f"  jtru '{self.label}"
+
+    def effect(self):
+        return -1
+
+
+@dataclass
+class Label(Instr):
+    label: int
+
+    def __str__(self):
+        return f"'{self.label}:"
+
+    def effect(self):
+        return 0
+
+
+@dataclass
+class Ann(Instr):
+    message: str
+
+    def __str__(self):
+        return f"  {repr(self.message)}"
+
+    def effect(self):
+        return 0
+
+
+@dataclass
+class Unary(Instr):
+    op: Callable[[Value], Value]
+
+    def __str__(self):
+        return f"  unop {self.op.__name__}"
+
+    def effect(self):
+        return 0
+
+
+@dataclass
+class BinOp(Instr):
+    op: Callable[[Value, Value], Value]
+
+    def __str__(self):
+        return f"  binop {self.op.__name__}"
+
+    def effect(self):
+        return -1
+
+
+@dataclass
+class JumpArrayNotMatch(Instr):
+    n: int
+    failure: str
+
+    def __str__(self):
+        return f"  janm {self.n} '{self.failure}"
+
+    def effect(self):
+        return 0
+
+
+@dataclass
+class JumpArrayMatch(Instr):
+    n: int
+    success: str
+
+    def __str__(self):
+        return f"  jam {self.n} '{self.success}"
+
+    def effect(self):
+        return 0
+
+
+@dataclass
+class Abort:
     reason: str
 
+    def __str__(self):
+        return f"  abort {repr(self.reason)}"
 
-@dataclass
-class IsType(Instr):
-    ty: type
-
-
-@dataclass
-class MatchArray(Instr):
-    lower_bound: int
+    def effect(self):
+        return 0
 
 
 @dataclass
-class Index(Instr):
-    array: Ref
-    ix: Ref
+class MakeClosure:
+    label: str
+    slots: int
+
+    def __str__(self):
+        return f"  clos '{self.label} {self.slots}"
+
+    def effect(self):
+        return 1
+
+
+@dataclass
+class CapLoc:
+    """capture local variable and add to closure object"""
+    index: int
+
+    def __str__(self):
+        return f"  capl {self.index}"
+
+    def effect(self):
+        return 0
+
+
+@datacass
+class CapCap:
+    """capture capture and add to closure object"""
+    index: int
+
+    def __str__(self):
+        return f"  capc {self.index}"
+
+    def effect(self):
+        return 0
+
+
+@dataclass
+class GetCap:
+    """get capture from current function"""
+    index: int
+
+    def __str__(self):
+        return f"  gcap {self.index}"
+
+    def effect(self):
+        return 1
+
+
+@dataclass
+class SetCap:
+    """set capture in current function"""
+    index: int
+
+    def __str__(self):
+        return f"  scap {self.index}"
+
+    def effect(self):
+        return -1
 
 
 Instr.get_children()
