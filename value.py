@@ -1,20 +1,6 @@
 from dataclasses import dataclass, field
 
-from instr import Instr
 from mixins import Format, GetChildren
-
-
-@dataclass
-class ClosureSpec(Format):
-    code: list[Instr]
-    n_args: int
-    capture_indices: list[int]
-
-    def short(self):
-        return f"{type(self).__qualname__}"
-
-    def positional(self):
-        yield from self.code
 
 
 @dataclass
@@ -85,12 +71,9 @@ class Object(Value):
 
 @dataclass
 class Closure(Value):
-    spec: ClosureSpec
-    captures: list[Value]
-
-    @classmethod
-    def from_code(cls, code):
-        return cls(ClosureSpec(code, 0, []), [])
+    code: list["Instr"]
+    n_args: int
+    slots: list[Value]
 
 
 Value.get_children()

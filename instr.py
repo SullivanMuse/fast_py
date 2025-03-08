@@ -1,17 +1,18 @@
-from dataclasses import dataclass
-from typing import Callable
-from mixins import GetChildren
-from value import ClosureSpec, Value
+import dataclasses
+import typing
+
+import mixins
+import value
 
 
-@dataclass
-class Instr(GetChildren):
+@dataclasses.dataclass
+class Instr(mixins.GetChildren):
     def effect(self):
         """Effect on stack depth"""
         raise NotImplementedError
 
 
-@dataclass
+@dataclasses.dataclass
 class GetLocal:
     """get local variable"""
     index: int
@@ -23,7 +24,7 @@ class GetLocal:
         return 1
 
 
-@dataclass
+@dataclasses.dataclass
 class SetLocal:
     """set local variable"""
     index: int
@@ -35,9 +36,9 @@ class SetLocal:
         return -1
 
 
-@dataclass
+@dataclasses.dataclass
 class Push(Instr):
-    value: Value
+    value: value.Value
 
     def __str__(self):
         return f"  push {self.value}"
@@ -46,7 +47,7 @@ class Push(Instr):
         return 1
 
 
-@dataclass
+@dataclasses.dataclass
 class Dupe(Instr):
     def __str__(self):
         return "  dup"
@@ -55,7 +56,7 @@ class Dupe(Instr):
         return 1
 
 
-@dataclass
+@dataclasses.dataclass
 class Pop(Instr):
     def __str__(self):
         return "  pop"
@@ -64,7 +65,7 @@ class Pop(Instr):
         return -1
 
 
-@dataclass
+@dataclasses.dataclass
 class Jump(Instr):
     label: "Label"
 
@@ -75,7 +76,7 @@ class Jump(Instr):
         return 0
 
 
-@dataclass
+@dataclasses.dataclass
 class JTrue(Instr):
     label: str
 
@@ -86,7 +87,7 @@ class JTrue(Instr):
         return -1
 
 
-@dataclass
+@dataclasses.dataclass
 class Label(Instr):
     label: int
 
@@ -97,7 +98,7 @@ class Label(Instr):
         return 0
 
 
-@dataclass
+@dataclasses.dataclass
 class Ann(Instr):
     message: str
 
@@ -108,9 +109,9 @@ class Ann(Instr):
         return 0
 
 
-@dataclass
+@dataclasses.dataclass
 class Unary(Instr):
-    op: Callable[[Value], Value]
+    op: typing.Callable[[value.Value], value.Value]
 
     def __str__(self):
         return f"  unop {self.op.__name__}"
@@ -119,9 +120,9 @@ class Unary(Instr):
         return 0
 
 
-@dataclass
+@dataclasses.dataclass
 class BinOp(Instr):
-    op: Callable[[Value, Value], Value]
+    op: typing.Callable[[value.Value, value.Value], value.Value]
 
     def __str__(self):
         return f"  binop {self.op.__name__}"
@@ -130,7 +131,7 @@ class BinOp(Instr):
         return -1
 
 
-@dataclass
+@dataclasses.dataclass
 class JumpArrayNotMatch(Instr):
     n: int
     failure: str
@@ -142,7 +143,7 @@ class JumpArrayNotMatch(Instr):
         return 0
 
 
-@dataclass
+@dataclasses.dataclass
 class JumpArrayMatch(Instr):
     n: int
     success: str
@@ -154,7 +155,7 @@ class JumpArrayMatch(Instr):
         return 0
 
 
-@dataclass
+@dataclasses.dataclass
 class Abort:
     reason: str
 
@@ -165,9 +166,10 @@ class Abort:
         return 0
 
 
-@dataclass
+@dataclasses.dataclass
 class MakeClosure:
-    label: str
+    code: list[Instr]
+    n_args: int
     slots: int
 
     def __str__(self):
@@ -177,7 +179,7 @@ class MakeClosure:
         return 1
 
 
-@dataclass
+@dataclasses.dataclass
 class CapLoc:
     """capture local variable and add to closure object"""
     index: int
@@ -189,7 +191,7 @@ class CapLoc:
         return 0
 
 
-@datacass
+@dataclasses.dataclass
 class CapCap:
     """capture capture and add to closure object"""
     index: int
@@ -201,7 +203,7 @@ class CapCap:
         return 0
 
 
-@dataclass
+@dataclasses.dataclass
 class GetCap:
     """get capture from current function"""
     index: int
@@ -213,7 +215,7 @@ class GetCap:
         return 1
 
 
-@dataclass
+@dataclasses.dataclass
 class SetCap:
     """set capture in current function"""
     index: int
