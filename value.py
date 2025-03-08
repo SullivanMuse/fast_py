@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 from instr import Instr
-from mixins import Format
+from mixins import Format, GetChildren
 
 
 @dataclass
@@ -18,7 +18,7 @@ class ClosureSpec(Format):
 
 
 @dataclass
-class Value(Format):
+class Value(Format, GetChildren):
     def short(self):
         return f"Value.{type(self).__name__}"
 
@@ -91,3 +91,6 @@ class Closure(Value):
     @classmethod
     def from_code(cls, code):
         return cls(ClosureSpec(code, 0, []), [])
+
+
+Value.get_children()
